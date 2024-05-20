@@ -1897,10 +1897,10 @@ mod tests {
             hex::decode("bbf55335").unwrap(), // keccak selector for "transact_retrieve1()"
             Nonce(1),
             Fee {
-                gas_limit: U256::from(815563),
+                gas_limit: U256::from(4_000_000),
                 max_fee_per_gas: U256::from(250_000_000),
                 max_priority_fee_per_gas: U256::from(250_000_000),
-                gas_per_pubdata_limit: U256::from(25000),
+                gas_per_pubdata_limit: U256::from(50000),
             },
             U256::from(0),
             zksync_basic_types::L2ChainId::from(260),

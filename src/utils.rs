@@ -232,7 +232,7 @@ pub fn utc_datetime_from_epoch_ms(millis: u64) -> DateTime<Utc> {
 pub fn into_jsrpc_error(err: Web3Error) -> Error {
     Error {
         code: match err {
-            Web3Error::InternalError(_) | Web3Error::NotImplemented => ErrorCode::InternalError,
+            Web3Error::InternalError(_) | Web3Error::MethodNotImplemented => ErrorCode::InternalError,
             Web3Error::NoBlock
             | Web3Error::PrunedBlock(_)
             | Web3Error::PrunedL1Batch(_)

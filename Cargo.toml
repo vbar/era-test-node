@@ -11,14 +11,14 @@ categories = ["cryptography"]
 publish = false # We don't want to publish our binaries.
 
 [dependencies]
-zksync_basic_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_node_fee_model = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-multivm = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_contracts = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_utils = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_state = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea" }
-zksync_web3_decl = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e10bbdd1e863962552f37e768ae6af649353e4ea", features = [ "server", "client" ] }
+zksync_basic_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_node_fee_model = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+multivm = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_contracts = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_types = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_utils = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_state = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
+zksync_web3_decl = { git = "https://github.com/matter-labs/zksync-era.git", rev = "e55b11fb2a438cd97d2b5523d0d55d03bc0f0071" }
 sha3 = "0.10.6"
 
 

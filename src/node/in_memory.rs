@@ -1263,20 +1263,6 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
                 )
             );
 
-            {
-                let fee_model_config = self
-                    .inner
-                    .read()
-                    .expect("Failed to acquire reading lock")
-                    .fee_input_provider
-                    .get_fee_model_config();
-                tracing::info!(
-                    "Publishing full block costs the operator around {} l2 gas",
-                    to_human_size(
-                        bootloader_debug.gas_per_pubdata * fee_model_config.batch_overhead_l1_gas
-                    ),
-                );
-            }
             tracing::info!("Your transaction has contributed to filling up the block in the following way (we take the max contribution as the cost):");
             tracing::info!(
                 "  Length overhead:  {:>15}",

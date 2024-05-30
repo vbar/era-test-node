@@ -55,6 +55,7 @@ use zksync_types::{
     api::{Block, DebugCall, Log, TransactionReceipt, TransactionVariant},
     block::{unpack_block_info, L2BlockHasher},
     fee::Fee,
+    fee_model::{BatchFeeInput, PubdataIndependentBatchFeeModelInput},
     get_nonce_key,
     l2::L2Tx,
     l2::TransactionType,
@@ -362,18 +363,20 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
         )
         .new_batch();
 
-        let fee_input_provider = self.fee_input_provider.clone();
+        let fee_input_provider = &self.fee_input_provider;
+        let fee_input = BatchFeeInput::PubdataIndependent(
+            PubdataIndependentBatchFeeModelInput {
+                fair_l2_gas_price: fee_input_provider.l2_gas_price,
+                fair_pubdata_price: fee_input_provider.fair_pubdata_price,
+                l1_gas_price: fee_input_provider.l1_gas_price,
+            }
+        );
         let batch_env = L1BatchEnv {
             // TODO: set the previous batch hash properly (take from fork, when forking, and from local storage, when this is not the first block).
             previous_batch_hash: None,
             number: L1BatchNumber::from(block_ctx.batch),
             timestamp: block_ctx.timestamp,
-            fee_input: block_on(async move {
-                fee_input_provider
-                    .get_batch_fee_input_scaled(1.0, 1.0)
-                    .await
-                    .unwrap()
-            }),
+            fee_input,
             fee_account: H160::zero(),
             enforced_base_fee: None,
             first_l2_block: L2BlockEnv {
@@ -881,6 +884,7 @@ pub struct Snapshot {
 pub struct InMemoryNodeConfig {
     // The values to be used when calculating gas.
     pub l2_fair_gas_price: u64,
+    pub fair_pubdata_price: Option<u64>,
     pub show_calls: ShowCalls,
     pub show_outputs: bool,
     pub show_storage_logs: ShowStorageLogs,
@@ -894,6 +898,7 @@ impl Default for InMemoryNodeConfig {
     fn default() -> Self {
         Self {
             l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
+            fair_pubdata_price: None,
             show_calls: Default::default(),
             show_outputs: Default::default(),
             show_storage_logs: Default::default(),
@@ -953,6 +958,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
                 fee_input_provider: TestNodeFeeInputProvider::new(
                     f.l1_gas_price,
                     config.l2_fair_gas_price,
+                    config.fair_pubdata_price,
                 ),
                 tx_results: Default::default(),
                 blocks,
@@ -990,6 +996,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
                 fee_input_provider: TestNodeFeeInputProvider::new(
                     L1_GAS_PRICE,
                     config.l2_fair_gas_price,
+                    config.fair_pubdata_price,
                 ),
                 tx_results: Default::default(),
                 blocks,

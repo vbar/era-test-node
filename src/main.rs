@@ -239,6 +239,12 @@ struct Cli {
     l2_gas_price: Option<u64>,
 
     #[arg(long)]
+    /// If provided, uses a custom value as the batch fee input
+    /// pubdata price. If not provided the price will be computed from
+    /// L1 gas price.
+    fair_pubdata_price: Option<u64>,
+
+    #[arg(long)]
     /// If true, the tool will try to contact openchain to resolve the ABI & topic names.
     /// It will make debug log more readable, but will decrease the performance.
     resolve_hashes: bool,
@@ -394,6 +400,7 @@ async fn main() -> anyhow::Result<()> {
         Some(observability),
         InMemoryNodeConfig {
             l2_fair_gas_price,
+            fair_pubdata_price: opt.fair_pubdata_price,
             show_calls: opt.show_calls,
             show_outputs: opt.show_outputs,
             show_storage_logs: opt.show_storage_logs,

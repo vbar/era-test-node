@@ -7,13 +7,16 @@ use zksync_types::L1_GAS_PER_PUBDATA_BYTE;
 pub struct TestNodeFeeInputProvider {
     pub l1_gas_price: u64,
     pub l2_gas_price: u64,
+    pub fair_pubdata_price: u64,
 }
 
 impl TestNodeFeeInputProvider {
-    pub fn new(l1_gas_price: u64, l2_gas_price: u64) -> Self {
+    pub fn new(l1_gas_price: u64, l2_gas_price: u64, pubdata_price: Option<u64>) -> Self {
+        let fair_pubdata_price = if let Some(pp) = pubdata_price { pp } else { l1_gas_price * L1_GAS_PER_PUBDATA_BYTE as u64 };
         Self {
             l1_gas_price,
             l2_gas_price,
+            fair_pubdata_price,
         }
     }
 
@@ -35,7 +38,7 @@ impl BatchFeeModelInputProvider for TestNodeFeeInputProvider {
         FeeParams::V2(FeeParamsV2 {
             config: self.get_fee_model_config(),
             l1_gas_price: self.l1_gas_price,
-            l1_pubdata_price: self.l1_gas_price * L1_GAS_PER_PUBDATA_BYTE as u64,
+            l1_pubdata_price: self.fair_pubdata_price,
         })
     }
 }

@@ -297,6 +297,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
     }
 
     pub fn set_code(&self, address: Address, code: Vec<u8>) -> Result<()> {
+        if code.len() % 32 != 0 {
+            return Err(anyhow!("bytes must be divisible by 32"));
+        }
+
         self.get_inner()
             .write()
             .map_err(|err| anyhow!("failed acquiring lock: {:?}", err))

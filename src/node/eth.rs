@@ -18,6 +18,7 @@ use zksync_types::{
     transaction_request::TransactionRequest,
     utils::storage_key_for_standard_token_balance,
     PackedEthSignature, StorageKey, L2_BASE_TOKEN_ADDRESS,
+    MAX_L1_TRANSACTION_GAS_LIMIT,
 };
 use zksync_utils::{h256_to_u256, u256_to_h256};
 use zksync_web3_decl::{
@@ -1378,8 +1379,8 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         &self,
         tx: zksync_types::transaction_request::CallRequest,
     ) -> jsonrpc_core::BoxFuture<jsonrpc_core::Result<zksync_basic_types::H256>> {
-        let chain_id = match self.get_inner().read() {
-            Ok(reader) => reader.fork_storage.chain_id,
+        let (chain_id, l1_gas_price) = match self.get_inner().read() {
+            Ok(reader) => (reader.fork_storage.chain_id, reader.fee_input_provider.l1_gas_price),
             Err(_) => {
                 return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
                     anyhow::Error::msg("Failed to acquire read lock for chain ID retrieval."),
@@ -1389,6 +1390,11 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         };
 
         let mut tx_req = TransactionRequest::from(tx.clone());
+        // Users might expect a "sensible default"
+        if tx.gas.is_none() {
+            tx_req.gas = U256::from(MAX_L1_TRANSACTION_GAS_LIMIT);
+        }
+
         // EIP-1559 gas fields should be processed separately
         if tx.gas_price.is_some() {
             if tx.max_fee_per_gas.is_some() || tx.max_priority_fee_per_gas.is_some() {
@@ -1399,7 +1405,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
                 .boxed();
             }
         } else {
-            tx_req.gas_price = tx.max_fee_per_gas.unwrap_or_default();
+            tx_req.gas_price = tx.max_fee_per_gas.unwrap_or(U256::from(l1_gas_price));
             tx_req.max_priority_fee_per_gas = tx.max_priority_fee_per_gas;
             if tx_req.transaction_type.is_none() {
                 tx_req.transaction_type = Some(zksync_types::EIP_1559_TX_TYPE.into());

@@ -125,7 +125,7 @@ describe("hardhat_setCode", function () {
 
         const address = "0x1000000000000000000000000000000000001111";
         const artifact = await deployer.loadArtifact("Return5");
-        let contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
+        const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
         const shortCode = contractCode.slice(0, contractCode.length - 1);
 
         await provider.send("hardhat_setCode", [address, shortCode]);

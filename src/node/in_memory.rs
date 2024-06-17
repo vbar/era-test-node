@@ -1522,7 +1522,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
         for b in vm.get_last_tx_compressed_bytecodes().iter() {
             let hashcode = match bytecode_to_factory_dep(b.original.clone()) {
                 Ok(hc) => hc,
-                Err(error) => { return Err(error.to_string()); }
+                Err(error) => {
+                    tracing::error!("{}", format!("cannot convert bytecode: {}", error).on_red());
+                    return Err(error.to_string());
+                }
             };
             bytecodes.insert(hashcode.0, hashcode.1);
         }

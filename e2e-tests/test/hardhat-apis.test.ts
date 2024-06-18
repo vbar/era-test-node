@@ -120,15 +120,15 @@ describe("hardhat_setCode", function () {
 
   it("Should reject invalid code", async function () {
     const action = async () => {
-        const wallet = new Wallet(RichAccounts[0].PrivateKey);
-        const deployer = new Deployer(hre, wallet);
+      const wallet = new Wallet(RichAccounts[0].PrivateKey);
+      const deployer = new Deployer(hre, wallet);
 
-        const address = "0x1000000000000000000000000000000000001111";
-        const artifact = await deployer.loadArtifact("Return5");
-        const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
-        const shortCode = contractCode.slice(0, contractCode.length - 1);
+      const address = "0x1000000000000000000000000000000000001111";
+      const artifact = await deployer.loadArtifact("Return5");
+      const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
+      const shortCode = contractCode.slice(0, contractCode.length - 1);
 
-        await provider.send("hardhat_setCode", [address, shortCode]);
+      await provider.send("hardhat_setCode", [address, shortCode]);
     };
 
     await expectThrowsAsync(action);

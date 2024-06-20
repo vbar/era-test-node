@@ -941,7 +941,11 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
         observability: Option<Observability>,
         config: InMemoryNodeConfig,
     ) -> Self {
-        let default_l1_gas_price = if let Some(f) = &fork { f.l1_gas_price } else { DEFAULT_L1_GAS_PRICE };
+        let default_l1_gas_price = if let Some(f) = &fork {
+            f.l1_gas_price
+        } else {
+            DEFAULT_L1_GAS_PRICE
+        };
         let l1_gas_price = if let Some(custom_l1_gas_price) = config.l1_gas_price {
             tracing::info!(
                 "L1 gas price set to {} (overridden from {})",

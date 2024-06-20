@@ -17,8 +17,7 @@ use zksync_types::{
     l2::L2Tx,
     transaction_request::TransactionRequest,
     utils::storage_key_for_standard_token_balance,
-    PackedEthSignature, StorageKey, L2_BASE_TOKEN_ADDRESS,
-    MAX_L1_TRANSACTION_GAS_LIMIT,
+    PackedEthSignature, StorageKey, L2_BASE_TOKEN_ADDRESS, MAX_L1_TRANSACTION_GAS_LIMIT,
 };
 use zksync_utils::{h256_to_u256, u256_to_h256};
 use zksync_web3_decl::{
@@ -1380,7 +1379,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         tx: zksync_types::transaction_request::CallRequest,
     ) -> jsonrpc_core::BoxFuture<jsonrpc_core::Result<zksync_basic_types::H256>> {
         let (chain_id, l1_gas_price) = match self.get_inner().read() {
-            Ok(reader) => (reader.fork_storage.chain_id, reader.fee_input_provider.l1_gas_price),
+            Ok(reader) => (
+                reader.fork_storage.chain_id,
+                reader.fee_input_provider.l1_gas_price,
+            ),
             Err(_) => {
                 return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
                     anyhow::Error::msg("Failed to acquire read lock for chain ID retrieval."),

@@ -325,9 +325,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
             .write()
             .map_err(|err| anyhow!("failed acquiring lock: {:?}", err))
             .map(|mut writer| {
-                let key = StorageKey::new(
-                    AccountTreeId::new(address),
-                    u256_to_h256(slot));
+                let key = StorageKey::new(AccountTreeId::new(address), u256_to_h256(slot));
                 writer.fork_storage.set_value(key, u256_to_h256(value));
                 true
             })
@@ -545,9 +543,7 @@ mod tests {
         let slot = U256::from(37);
         let value = U256::from(42);
 
-        let key = StorageKey::new(
-            AccountTreeId::new(address),
-            u256_to_h256(slot));
+        let key = StorageKey::new(AccountTreeId::new(address), u256_to_h256(slot));
         let value_before = node
             .get_inner()
             .write()
@@ -556,7 +552,8 @@ mod tests {
             .read_value(&key);
         assert_eq!(H256::default(), value_before);
 
-        let result = node.set_storage_at(address, slot, value)
+        let result = node
+            .set_storage_at(address, slot, value)
             .expect("failed setting value");
         assert!(result);
 

@@ -305,7 +305,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                 tracing::info!("set code for address {address:#x}");
                 let hashcode = bytecode_to_factory_dep(code)?;
                 let hash = u256_to_h256(hashcode.0);
-                let code = hashcode.1.iter()
+                let code = hashcode
+                    .1
+                    .iter()
                     .flat_map(|entry| {
                         let mut bytes = vec![0u8; 32];
                         entry.to_big_endian(&mut bytes);

@@ -21,8 +21,8 @@ use crate::{
     namespaces::{RpcResult, ZksNamespaceT},
     node::{InMemoryNode, TransactionResult},
     utils::{
-        internal_error, into_jsrpc_error, not_implemented, report_into_jsrpc_error, utc_datetime_from_epoch_ms,
-        IntoBoxedFuture,
+        internal_error, into_jsrpc_error, not_implemented, report_into_jsrpc_error,
+        utc_datetime_from_epoch_ms, IntoBoxedFuture,
     },
 };
 
@@ -525,7 +525,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> ZksNamespa
 
             let maybe_bytecode = match writer.fork_storage.load_factory_dep_internal(hash) {
                 Ok(maybe_bytecode) => maybe_bytecode,
-                Err(error) => { return Err(report_into_jsrpc_error(error)); }
+                Err(error) => {
+                    return Err(report_into_jsrpc_error(error));
+                }
             };
 
             if maybe_bytecode.is_some() {
@@ -541,7 +543,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> ZksNamespa
             if let Some(fork_details) = maybe_fork_details {
                 let maybe_bytecode = match fork_details.fork_source.get_bytecode_by_hash(hash) {
                     Ok(maybe_bytecode) => maybe_bytecode,
-                    Err(error) => { return Err(report_into_jsrpc_error(error)); }
+                    Err(error) => {
+                        return Err(report_into_jsrpc_error(error));
+                    }
                 };
 
                 Ok(maybe_bytecode)

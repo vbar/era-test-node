@@ -100,7 +100,10 @@ impl<S: ForkSource> ForkStorage<S> {
         }
     }
 
-    pub fn read_value_internal(&self, key: &StorageKey) -> eyre::Result<zksync_types::StorageValue> {
+    pub fn read_value_internal(
+        &self,
+        key: &StorageKey,
+    ) -> eyre::Result<zksync_types::StorageValue> {
         let mut mutator = self.inner.write().unwrap();
         let local_storage = mutator.raw_storage.read_value(key);
 
@@ -115,15 +118,13 @@ impl<S: ForkSource> ForkStorage<S> {
             let l2_miniblock = fork.l2_miniblock;
             let key_ = *key;
 
-            let result = fork
-                .fork_source
-                .get_storage_at(
-                    *key_.account().address(),
-                    h256_to_u256(*key_.key()),
-                    Some(BlockIdVariant::BlockNumber(BlockNumber::Number(U64::from(
-                        l2_miniblock,
-                    )))),
-                )?;
+            let result = fork.fork_source.get_storage_at(
+                *key_.account().address(),
+                h256_to_u256(*key_.key()),
+                Some(BlockIdVariant::BlockNumber(BlockNumber::Number(U64::from(
+                    l2_miniblock,
+                )))),
+            )?;
 
             mutator.value_read_cache.insert(*key, result);
             Ok(result)

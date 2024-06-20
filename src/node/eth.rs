@@ -29,7 +29,10 @@ use crate::{
     fork::ForkSource,
     namespaces::{EthNamespaceT, EthTestNodeNamespaceT, RpcResult},
     node::{InMemoryNode, TransactionResult, MAX_TX_SIZE, PROTOCOL_VERSION},
-    utils::{self, h256_to_u64, into_jsrpc_error, not_implemented, report_into_jsrpc_error, IntoBoxedFuture},
+    utils::{
+        self, h256_to_u64, into_jsrpc_error, not_implemented, report_into_jsrpc_error,
+        IntoBoxedFuture,
+    },
 };
 
 impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthNamespaceT
@@ -139,9 +142,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthNamespa
                 Ok(inner_guard) => {
                     match inner_guard.fork_storage.read_value_internal(&balance_key) {
                         Ok(balance) => Ok(h256_to_u256(balance)),
-                        Err(error) => {
-                            Err(report_into_jsrpc_error(error))
-                        }
+                        Err(error) => Err(report_into_jsrpc_error(error)),
                     }
                 }
                 Err(_) => {
@@ -262,22 +263,18 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthNamespa
             let code_key = get_code_key(&address);
 
             match inner.write() {
-                Ok(guard) => {
-                    match guard.fork_storage.read_value_internal(&code_key) {
-                        Ok(code_hash) => {
-                            match guard.fork_storage.load_factory_dep_internal(code_hash) {
-                                Ok(raw_code) => {
-                                    let code = raw_code.unwrap_or_default();
-                                    Ok(Bytes::from(code))
-                                },
-                                Err(error) => Err(
-                                    report_into_jsrpc_error(error)),
+                Ok(guard) => match guard.fork_storage.read_value_internal(&code_key) {
+                    Ok(code_hash) => {
+                        match guard.fork_storage.load_factory_dep_internal(code_hash) {
+                            Ok(raw_code) => {
+                                let code = raw_code.unwrap_or_default();
+                                Ok(Bytes::from(code))
                             }
-                        },
-                        Err(error) => Err(
-                            report_into_jsrpc_error(error)),
+                            Err(error) => Err(report_into_jsrpc_error(error)),
+                        }
                     }
-                }
+                    Err(error) => Err(report_into_jsrpc_error(error)),
+                },
                 Err(_) => Err(into_jsrpc_error(Web3Error::InternalError(
                     anyhow::Error::msg("Failed to acquire write lock for code retrieval"),
                 ))),
@@ -306,13 +303,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthNamespa
             let nonce_key = get_nonce_key(&address);
 
             match inner.write() {
-                Ok(guard) => {
-                    match guard.fork_storage.read_value_internal(&nonce_key) {
-                        Ok(result) => Ok(h256_to_u64(result).into()),
-                        Err(error) => Err(
-                            report_into_jsrpc_error(error)),
-                    }
-                }
+                Ok(guard) => match guard.fork_storage.read_value_internal(&nonce_key) {
+                    Ok(result) => Ok(h256_to_u64(result).into()),
+                    Err(error) => Err(report_into_jsrpc_error(error)),
+                },
                 Err(_) => Err(into_jsrpc_error(Web3Error::InternalError(
                     anyhow::Error::msg("Failed to acquire write lock for nonce retrieval"),
                 ))),

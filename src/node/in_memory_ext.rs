@@ -8,7 +8,8 @@ use zksync_types::{
 use zksync_utils::{h256_to_u256, u256_to_h256};
 
 use crate::{
-    fork::ForkSource,
+    fork::{ForkDetails, ForkSource},
+    namespaces::ResetRequest,
     node::InMemoryNode,
     utils::{self, bytecode_to_factory_dep},
 };
@@ -261,6 +262,52 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
 
                 Ok(true)
             })
+    }
+
+    pub fn reset_network(&self, reset_spec: Option<ResetRequest>) -> Result<bool> {
+        let (opt_url, block_number) = if let Some(spec) = reset_spec {
+            if let Some(to) = spec.to {
+                if spec.forking.is_some() {
+                    return Err(anyhow!("Only one of 'to' and 'forking' attributes can be specified"));
+                }
+                let url = match self.get_fork_url() {
+                    Ok(url) => url,
+                    Err(error) => {
+                        return Err(anyhow!(error.to_string()));
+                    }
+                };
+                (Some(url), Some(to.as_u64()))
+            } else if let Some(forking) = spec.forking {
+                let block_number = forking.block_number.map(|n| n.as_u64());
+                (Some(forking.json_rpc_url), block_number)
+            } else {
+                (None, None)
+            }
+        } else {
+            (None, None)
+        };
+
+        let fork_details = if let Some(url) = opt_url {
+            let cache_config = self.get_cache_config().map_err(|err| anyhow!(err))?;
+            match ForkDetails::from_url(url, block_number, cache_config) {
+                Ok(fd) => Some(fd),
+                Err(error) => {
+                    return Err(anyhow!(error.to_string()));
+                }
+            }
+        } else {
+            None
+        };
+
+        match self.reset(fork_details) {
+            Ok(()) => {
+                tracing::info!("👷 Network reset");
+                Ok(true)
+            }
+            Err(error) => {
+                return Err(anyhow!(error.to_string()));
+            }
+        }
     }
 
     pub fn impersonate_account(&self, address: Address) -> Result<bool> {

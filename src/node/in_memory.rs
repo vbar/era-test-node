@@ -1,6 +1,7 @@
 //! In-memory node, that supports forking other networks.
 use crate::{
     bootloader_debug::{BootloaderDebug, BootloaderDebugTracer},
+    cache::CacheConfig,
     console_log::ConsoleLogHandler,
     deps::{storage_view::StorageView, InMemoryStorage},
     filters::EthFilters,
@@ -333,6 +334,85 @@ type L2TxResult = (
 );
 
 impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
+    /// Create the state to be used implementing [InMemoryNode].
+    pub fn new(
+        fork: Option<ForkDetails>,
+        observability: Option<Observability>,
+        config: InMemoryNodeConfig,
+    ) -> Self {
+        if let Some(f) = &fork {
+            let mut block_hashes = HashMap::<u64, H256>::new();
+            block_hashes.insert(f.l2_block.number.as_u64(), f.l2_block.hash);
+            let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
+            blocks.insert(f.l2_block.hash, f.l2_block.clone());
+
+            InMemoryNodeInner {
+                current_timestamp: f.block_timestamp,
+                current_batch: f.l1_block.0,
+                current_miniblock: f.l2_miniblock,
+                current_miniblock_hash: f.l2_miniblock_hash,
+                fee_input_provider: TestNodeFeeInputProvider::new(
+                    f.l1_gas_price,
+                    config.l2_fair_gas_price,
+                ),
+                tx_results: Default::default(),
+                blocks,
+                block_hashes,
+                filters: Default::default(),
+                fork_storage: ForkStorage::new(fork, &config.system_contracts_options),
+                show_calls: config.show_calls,
+                show_outputs: config.show_outputs,
+                show_storage_logs: config.show_storage_logs,
+                show_vm_details: config.show_vm_details,
+                show_gas_details: config.show_gas_details,
+                resolve_hashes: config.resolve_hashes,
+                console_log_handler: ConsoleLogHandler::default(),
+                system_contracts: SystemContracts::from_options(&config.system_contracts_options),
+                impersonated_accounts: Default::default(),
+                rich_accounts: HashSet::new(),
+                previous_states: Default::default(),
+                observability,
+            }
+        } else {
+            let mut block_hashes = HashMap::<u64, H256>::new();
+            let block_hash = compute_hash(0, H256::zero());
+            block_hashes.insert(0, block_hash);
+            let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
+            blocks.insert(
+                block_hash,
+                create_empty_block(0, NON_FORK_FIRST_BLOCK_TIMESTAMP, 0, None),
+            );
+
+            InMemoryNodeInner {
+                current_timestamp: NON_FORK_FIRST_BLOCK_TIMESTAMP,
+                current_batch: 0,
+                current_miniblock: 0,
+                current_miniblock_hash: block_hash,
+                fee_input_provider: TestNodeFeeInputProvider::new(
+                    L1_GAS_PRICE,
+                    config.l2_fair_gas_price,
+                ),
+                tx_results: Default::default(),
+                blocks,
+                block_hashes,
+                filters: Default::default(),
+                fork_storage: ForkStorage::new(fork, &config.system_contracts_options),
+                show_calls: config.show_calls,
+                show_outputs: config.show_outputs,
+                show_storage_logs: config.show_storage_logs,
+                show_vm_details: config.show_vm_details,
+                show_gas_details: config.show_gas_details,
+                resolve_hashes: config.resolve_hashes,
+                console_log_handler: ConsoleLogHandler::default(),
+                system_contracts: SystemContracts::from_options(&config.system_contracts_options),
+                impersonated_accounts: Default::default(),
+                rich_accounts: HashSet::new(),
+                previous_states: Default::default(),
+                observability,
+            }
+        }
+    }
+
     /// Create [L1BatchEnv] to be used in the VM.
     ///
     /// We compute l1/l2 block details from storage to support fork testing, where the storage
@@ -914,6 +994,8 @@ pub struct InMemoryNode<S: Clone> {
     inner: Arc<RwLock<InMemoryNodeInner<S>>>,
     /// List of snapshots of the [InMemoryNodeInner]. This is bounded at runtime by [MAX_SNAPSHOTS].
     pub(crate) snapshots: Arc<RwLock<Vec<Snapshot>>>,
+    /// Configuration option that survives reset.
+    system_contracts_options: system_contracts::Options,
 }
 
 fn contract_address_from_tx_result(execution_result: &VmExecutionResultAndLogs) -> Option<H160> {
@@ -939,86 +1021,86 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
         observability: Option<Observability>,
         config: InMemoryNodeConfig,
     ) -> Self {
-        let inner = if let Some(f) = &fork {
-            let mut block_hashes = HashMap::<u64, H256>::new();
-            block_hashes.insert(f.l2_block.number.as_u64(), f.l2_block.hash);
-            let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
-            blocks.insert(f.l2_block.hash, f.l2_block.clone());
-
-            InMemoryNodeInner {
-                current_timestamp: f.block_timestamp,
-                current_batch: f.l1_block.0,
-                current_miniblock: f.l2_miniblock,
-                current_miniblock_hash: f.l2_miniblock_hash,
-                fee_input_provider: TestNodeFeeInputProvider::new(
-                    f.l1_gas_price,
-                    config.l2_fair_gas_price,
-                ),
-                tx_results: Default::default(),
-                blocks,
-                block_hashes,
-                filters: Default::default(),
-                fork_storage: ForkStorage::new(fork, &config.system_contracts_options),
-                show_calls: config.show_calls,
-                show_outputs: config.show_outputs,
-                show_storage_logs: config.show_storage_logs,
-                show_vm_details: config.show_vm_details,
-                show_gas_details: config.show_gas_details,
-                resolve_hashes: config.resolve_hashes,
-                console_log_handler: ConsoleLogHandler::default(),
-                system_contracts: SystemContracts::from_options(&config.system_contracts_options),
-                impersonated_accounts: Default::default(),
-                rich_accounts: HashSet::new(),
-                previous_states: Default::default(),
-                observability,
-            }
-        } else {
-            let mut block_hashes = HashMap::<u64, H256>::new();
-            let block_hash = compute_hash(0, H256::zero());
-            block_hashes.insert(0, block_hash);
-            let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
-            blocks.insert(
-                block_hash,
-                create_empty_block(0, NON_FORK_FIRST_BLOCK_TIMESTAMP, 0, None),
-            );
-
-            InMemoryNodeInner {
-                current_timestamp: NON_FORK_FIRST_BLOCK_TIMESTAMP,
-                current_batch: 0,
-                current_miniblock: 0,
-                current_miniblock_hash: block_hash,
-                fee_input_provider: TestNodeFeeInputProvider::new(
-                    L1_GAS_PRICE,
-                    config.l2_fair_gas_price,
-                ),
-                tx_results: Default::default(),
-                blocks,
-                block_hashes,
-                filters: Default::default(),
-                fork_storage: ForkStorage::new(fork, &config.system_contracts_options),
-                show_calls: config.show_calls,
-                show_outputs: config.show_outputs,
-                show_storage_logs: config.show_storage_logs,
-                show_vm_details: config.show_vm_details,
-                show_gas_details: config.show_gas_details,
-                resolve_hashes: config.resolve_hashes,
-                console_log_handler: ConsoleLogHandler::default(),
-                system_contracts: SystemContracts::from_options(&config.system_contracts_options),
-                impersonated_accounts: Default::default(),
-                rich_accounts: HashSet::new(),
-                previous_states: Default::default(),
-                observability,
-            }
-        };
-
+        let system_contracts_options = config.system_contracts_options.clone();
+        let inner = InMemoryNodeInner::new(fork, observability, config);
         InMemoryNode {
             inner: Arc::new(RwLock::new(inner)),
             snapshots: Default::default(),
+            system_contracts_options,
         }
     }
 
     pub fn get_inner(&self) -> Arc<RwLock<InMemoryNodeInner<S>>> {
         self.inner.clone()
+    }
+
+    pub fn get_cache_config(&self) -> Result<CacheConfig, String> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
+        inner.fork_storage.get_cache_config()
+    }
+
+    pub fn get_fork_url(&self) -> Result<String, String> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
+        inner.fork_storage.get_fork_url()
+    }
+
+    fn get_config(&self, l2_gas_price_override: Option<u64>) -> Result<InMemoryNodeConfig, String> {
+        let inner = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
+        let l2_gas_price = if let Some(l2_gas_price) = l2_gas_price_override {
+            l2_gas_price
+        } else {
+            inner.fee_input_provider.l2_gas_price
+        };
+        Ok(InMemoryNodeConfig {
+            l2_fair_gas_price: l2_gas_price,
+            show_calls: inner.show_calls.clone(),
+            show_outputs: inner.show_outputs,
+            show_storage_logs: inner.show_storage_logs.clone(),
+            show_vm_details: inner.show_vm_details.clone(),
+            show_gas_details: inner.show_gas_details.clone(),
+            resolve_hashes: inner.resolve_hashes,
+            system_contracts_options: self.system_contracts_options.clone(),
+        })
+    }
+
+    pub fn reset(&self, fork: Option<ForkDetails>) -> Result<(), String> {
+        let observability = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?
+            .observability
+            .clone();
+
+        let l2_gas_price = if let Some(ref f) = fork {
+            Some(f.l2_fair_gas_price)
+        } else {
+            None
+        };
+        let config = self.get_config(l2_gas_price)?;
+
+        let inner = InMemoryNodeInner::new(fork, observability, config);
+
+        let mut writer = self
+            .snapshots
+            .write()
+            .map_err(|e| format!("Failed to acquire write lock: {}", e))?;
+        writer.clear();
+
+        let mut guard = self
+            .inner
+            .write()
+            .map_err(|e| format!("Failed to acquire write lock: {}", e))?;
+        *guard = inner;
+        Ok(())
     }
 
     /// Applies multiple transactions - but still one per L1 batch.
@@ -1888,6 +1970,7 @@ mod tests {
                 overwrite_chain_id: None,
                 l1_gas_price: 1000,
                 l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
+                cache_config: CacheConfig::default(),
             }),
             None,
             Default::default(),

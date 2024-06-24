@@ -105,6 +105,31 @@ impl<S: ForkSource> ForkStorage<S> {
         }
     }
 
+    pub fn get_cache_config(&self) -> Result<CacheConfig, String> {
+        let reader = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
+        let cache_config = if let Some(ref fork_details) = reader.fork {
+            fork_details.cache_config.clone()
+        } else {
+            CacheConfig::default()
+        };
+        Ok(cache_config)
+    }
+
+    pub fn get_fork_url(&self) -> Result<String, String> {
+        let reader = self
+            .inner
+            .read()
+            .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
+        if let Some(ref fork_details) = reader.fork {
+            fork_details.fork_source.get_fork_url().map_err(|e| e.to_string())
+        } else {
+            Err("not forked".to_string())
+        }
+    }
+
     fn read_value_internal(&self, key: &StorageKey) -> zksync_types::StorageValue {
         let mut mutator = self.inner.write().unwrap();
         let local_storage = mutator.raw_storage.read_value(key);
@@ -236,6 +261,9 @@ impl<S> ForkStorage<S> {
 /// forking a remote chain.
 /// The method signatures are similar to methods from ETHNamespace and ZKNamespace.
 pub trait ForkSource {
+    /// Returns the forked URL.
+    fn get_fork_url(&self) -> eyre::Result<String>;
+
     /// Returns the Storage value at a given index for given address.
     fn get_storage_at(
         &self,
@@ -324,6 +352,7 @@ pub struct ForkDetails {
     pub overwrite_chain_id: Option<L2ChainId>,
     pub l1_gas_price: u64,
     pub l2_fair_gas_price: u64,
+    pub cache_config: CacheConfig,
 }
 
 const SUPPORTED_VERSIONS: &[ProtocolVersionId] = &[
@@ -421,7 +450,7 @@ impl ForkDetails {
         }
 
         ForkDetails {
-            fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config)),
+            fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config.clone())),
             l1_block: l1_batch_number,
             l2_block: block,
             block_timestamp: block_details.base.timestamp,
@@ -430,6 +459,7 @@ impl ForkDetails {
             overwrite_chain_id: chain_id,
             l1_gas_price: block_details.base.l1_gas_price,
             l2_fair_gas_price: block_details.base.l2_fair_gas_price,
+            cache_config,
         }
     }
     /// Create a fork from a given network at a given height.
@@ -465,6 +495,39 @@ impl ForkDetails {
             cache_config,
         )
         .await
+    }
+
+    /// Return URL and HTTP client for `hardhat_reset`.
+    pub fn from_url(
+        url: String,
+        fork_at: Option<u64>,
+        cache_config: CacheConfig,
+    ) -> eyre::Result<Self> {
+        let parsed_url = SensitiveUrl::from_str(&url)?;
+        let builder = match Client::http(parsed_url) {
+            Ok(b) => b,
+            Err(error) => {
+                return Err(eyre::Report::msg(error));
+            }
+        };
+        let client = builder.build();
+
+        block_on(async move {
+            let l2_miniblock = if let Some(fork_at) = fork_at {
+                fork_at
+            } else {
+                client.get_block_number().await?.as_u64()
+            };
+
+            Ok(Self::from_url_and_miniblock_and_chain(
+                &url,
+                client,
+                l2_miniblock,
+                None,
+                cache_config,
+            )
+            .await)
+        })
     }
 
     /// Return URL and HTTP client for a given fork name.
@@ -524,7 +587,10 @@ mod tests {
     use zksync_state::ReadStorage;
     use zksync_types::{api::TransactionVariant, StorageKey};
 
-    use crate::{deps::InMemoryStorage, node::DEFAULT_L2_GAS_PRICE, system_contracts, testing};
+    use crate::{
+        cache::CacheConfig, deps::InMemoryStorage, node::DEFAULT_L2_GAS_PRICE, system_contracts,
+        testing,
+    };
 
     use super::{ForkDetails, ForkStorage};
 
@@ -554,6 +620,7 @@ mod tests {
             overwrite_chain_id: None,
             l1_gas_price: 100,
             l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
+            cache_config: CacheConfig::None,
         };
 
         let mut fork_storage: ForkStorage<testing::ExternalStorage> =

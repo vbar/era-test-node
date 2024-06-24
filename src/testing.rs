@@ -703,7 +703,7 @@ pub struct ExternalStorage {
     pub raw_storage: InMemoryStorage,
 }
 
-impl ForkSource for &ExternalStorage {
+impl ForkSource for ExternalStorage {
     fn get_storage_at(
         &self,
         address: H160,

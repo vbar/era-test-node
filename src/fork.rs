@@ -6,7 +6,9 @@
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
+    fmt,
     future::Future,
+    marker::PhantomData,
     str::FromStr,
     sync::{Arc, RwLock},
 };
@@ -71,12 +73,14 @@ pub struct ForkStorageInner<S> {
     pub factory_dep_cache: HashMap<H256, Option<Vec<u8>>>,
     // If set - it hold the necessary information on where to fetch the data.
     // If not set - it will simply read from underlying storage.
-    pub fork: Option<ForkDetails<S>>,
+    pub fork: Option<ForkDetails>,
+    // ForkSource type no longer needed but retained to keep the old interface.
+    pub dummy: PhantomData<S>,
 }
 
 impl<S: ForkSource> ForkStorage<S> {
     pub fn new(
-        fork: Option<ForkDetails<S>>,
+        fork: Option<ForkDetails>,
         system_contracts_options: &system_contracts::Options,
     ) -> Self {
         let chain_id = fork
@@ -95,6 +99,7 @@ impl<S: ForkSource> ForkStorage<S> {
                 value_read_cache: Default::default(),
                 fork,
                 factory_dep_cache: Default::default(),
+                dummy: Default::default(),
             })),
             chain_id,
         }
@@ -306,11 +311,9 @@ pub trait ForkSource {
 }
 
 /// Holds the information about the original chain.
-/// "S" is the implementation of the ForkSource.
-#[derive(Debug, Clone)]
-pub struct ForkDetails<S> {
-    // Source of the fork data (for example HTTPForkSource)
-    pub fork_source: S,
+pub struct ForkDetails {
+    // Source of the fork data (for example HttpForkSource)
+    pub fork_source: Box<dyn ForkSource + Send + Sync>,
     // Block number at which we forked (the next block to create is l1_block + 1)
     pub l1_block: L1BatchNumber,
     // The actual L2 block
@@ -355,7 +358,22 @@ pub fn supported_versions_to_string() -> String {
     versions.join(", ")
 }
 
-impl ForkDetails<HttpForkSource> {
+impl fmt::Debug for ForkDetails {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ForkDetails")
+            .field("l1_block", &self.l1_block)
+            .field("l2_block", &self.l2_block)
+            .field("l2_miniblock", &self.l2_miniblock)
+            .field("l2_miniblock_hash", &self.l2_miniblock_hash)
+            .field("block_timestamp", &self.block_timestamp)
+            .field("overwrite_chain_id", &self.overwrite_chain_id)
+            .field("l1_gas_price", &self.l1_gas_price)
+            .field("l2_fair_gas_price", &self.l2_fair_gas_price)
+            .finish()
+    }
+}
+
+impl ForkDetails {
     pub async fn from_url_and_miniblock_and_chain(
         url: &str,
         client: Client<L2>,
@@ -403,7 +421,7 @@ impl ForkDetails<HttpForkSource> {
         }
 
         ForkDetails {
-            fork_source: HttpForkSource::new(url.to_owned(), cache_config),
+            fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config)),
             l1_block: l1_batch_number,
             l2_block: block,
             block_timestamp: block_details.base.timestamp,
@@ -448,9 +466,7 @@ impl ForkDetails<HttpForkSource> {
         )
         .await
     }
-}
 
-impl<S: ForkSource> ForkDetails<S> {
     /// Return URL and HTTP client for a given fork name.
     pub fn fork_to_url_and_client(fork: &str) -> (&str, Client<L2>) {
         let url = match fork {
@@ -529,7 +545,7 @@ mod tests {
         let options = system_contracts::Options::default();
 
         let fork_details = ForkDetails {
-            fork_source: &external_storage,
+            fork_source: Box::new(external_storage),
             l1_block: L1BatchNumber(1),
             l2_block: zksync_types::api::Block::<TransactionVariant>::default(),
             l2_miniblock: 1,
@@ -540,7 +556,8 @@ mod tests {
             l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
         };
 
-        let mut fork_storage = ForkStorage::new(Some(fork_details), &options);
+        let mut fork_storage: ForkStorage<testing::ExternalStorage> =
+            ForkStorage::new(Some(fork_details), &options);
 
         assert_eq!(fork_storage.is_write_initial(&never_written_key), true);
         assert_eq!(fork_storage.is_write_initial(&key_with_some_value), false);

@@ -935,7 +935,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> Default for InMemoryNode<S> {
 
 impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
     pub fn new(
-        fork: Option<ForkDetails<S>>,
+        fork: Option<ForkDetails>,
         observability: Option<Observability>,
         config: InMemoryNodeConfig,
     ) -> Self {
@@ -1877,9 +1877,9 @@ mod tests {
         let mock_db = testing::ExternalStorage {
             raw_storage: external_storage.inner.read().unwrap().raw_storage.clone(),
         };
-        let node = InMemoryNode::new(
+        let node: InMemoryNode<testing::ExternalStorage> = InMemoryNode::new(
             Some(ForkDetails {
-                fork_source: &mock_db,
+                fork_source: Box::new(mock_db),
                 l1_block: L1BatchNumber(1),
                 l2_block: Block::default(),
                 l2_miniblock: 2,

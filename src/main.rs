@@ -1,4 +1,5 @@
 use crate::cache::CacheConfig;
+use crate::http_fork_source::HttpForkSource;
 use crate::node::{InMemoryNodeConfig, ShowGasDetails, ShowStorageLogs, ShowVMDetails};
 use crate::observability::Observability;
 use crate::utils::to_human_size;
@@ -389,7 +390,7 @@ async fn main() -> anyhow::Result<()> {
         ),
     }
 
-    let node = InMemoryNode::new(
+    let node: InMemoryNode<HttpForkSource> = InMemoryNode::new(
         fork_details,
         Some(observability),
         InMemoryNodeConfig {

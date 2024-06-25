@@ -131,7 +131,7 @@ describe("hardhat_setCode", function () {
       await provider.send("hardhat_setCode", [address, shortCode]);
     };
 
-    await expectThrowsAsync(action);
+    await expectThrowsAsync(action, "bytes must be divisible by 32");
   });
 
   it("Should update code with a different smart contract", async function () {

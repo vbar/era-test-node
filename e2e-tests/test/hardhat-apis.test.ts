@@ -120,6 +120,7 @@ describe("hardhat_setCode", function () {
 
   it("Should reject invalid code", async function () {
     const action = async () => {
+      // Arrange
       const wallet = new Wallet(RichAccounts[0].PrivateKey);
       const deployer = new Deployer(hre, wallet);
 
@@ -128,6 +129,7 @@ describe("hardhat_setCode", function () {
       const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
       const shortCode = contractCode.slice(0, contractCode.length - 1);
 
+      // Act
       await provider.send("hardhat_setCode", [address, shortCode]);
     };
 

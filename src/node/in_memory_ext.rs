@@ -484,6 +484,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_reset() {
+        let address = Address::from_str("0x36615Cf349d7F6344891B1e7CA7C72883F5dc049").unwrap();
+        let node = InMemoryNode::<HttpForkSource>::default();
+
+        let nonce_before = node.get_transaction_count(address, None).await.unwrap();
+
+        let set_result = node.set_nonce(address, U256::from(1337)).unwrap();
+        assert!(set_result);
+
+        let reset_result = node.reset_network(None).unwrap();
+        assert!(reset_result);
+
+        let nonce_after = node.get_transaction_count(address, None).await.unwrap();
+        assert_eq!(nonce_before, nonce_after);
+    }
+
+    #[tokio::test]
     async fn test_impersonate_account() {
         let node = InMemoryNode::<HttpForkSource>::default();
         let to_impersonate =

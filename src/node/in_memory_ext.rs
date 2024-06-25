@@ -277,6 +277,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                 let url = match self.get_fork_url() {
                     Ok(url) => url,
                     Err(error) => {
+                        tracing::error!("For returning to past local state, mark it with `evm_snapshot`, then revert to it with `evm_revert`.");
                         return Err(anyhow!(error.to_string()));
                     }
                 };

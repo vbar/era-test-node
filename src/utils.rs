@@ -292,6 +292,14 @@ pub fn into_jsrpc_error(err: Web3Error) -> Error {
     }
 }
 
+pub fn into_jsrpc_error_message(msg: String) -> Error {
+    Error {
+        code: ErrorCode::InternalError,
+        message: msg,
+        data: None,
+    }
+}
+
 pub fn internal_error(method_name: &'static str, error: impl fmt::Display) -> Web3Error {
     tracing::error!("Internal error in method {method_name}: {error}");
     Web3Error::InternalError(anyhow::Error::msg(error.to_string()))

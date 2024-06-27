@@ -1016,8 +1016,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
                 create_empty_block(0, NON_FORK_FIRST_BLOCK_TIMESTAMP, 0, None),
             );
 
-            let mut fee_input_provider = TestNodeFeeInputProvider::default();
-            fee_input_provider.l1_gas_price = l1_gas_price;
+            let fee_input_provider = TestNodeFeeInputProvider {
+                l1_gas_price,
+                ..Default::default()
+            };
             InMemoryNodeInner {
                 current_timestamp: NON_FORK_FIRST_BLOCK_TIMESTAMP,
                 current_batch: 0,

@@ -162,7 +162,10 @@ impl<S: ForkSource> ForkStorage<S> {
             .read()
             .map_err(|e| format!("Failed to acquire read lock: {}", e))?;
         if let Some(ref fork_details) = reader.fork {
-            fork_details.fork_source.get_fork_url().map_err(|e| e.to_string())
+            fork_details
+                .fork_source
+                .get_fork_url()
+                .map_err(|e| e.to_string())
         } else {
             Err("not forked".to_string())
         }

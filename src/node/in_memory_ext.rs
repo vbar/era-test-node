@@ -273,7 +273,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
         let (opt_url, block_number) = if let Some(spec) = reset_spec {
             if let Some(to) = spec.to {
                 if spec.forking.is_some() {
-                    return Err(anyhow!("Only one of 'to' and 'forking' attributes can be specified"));
+                    return Err(anyhow!(
+                        "Only one of 'to' and 'forking' attributes can be specified"
+                    ));
                 }
                 let url = match self.get_fork_url() {
                     Ok(url) => url,

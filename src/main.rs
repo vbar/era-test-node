@@ -213,7 +213,7 @@ enum DevSystemContracts {
 #[command(author = "Matter Labs", version, about = "Test Node", long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
     #[arg(long, default_value = "8011")]
     /// Port to listen on - default: 8011
     port: u16,
@@ -336,7 +336,9 @@ async fn main() -> anyhow::Result<()> {
         },
     };
 
-    let fork_details = match &opt.command {
+    // Use `Command::Run` as default.
+    let command = opt.command.as_ref().unwrap_or(&Command::Run);
+    let fork_details = match &command {
         Command::Run => None,
         Command::Fork(fork) => {
             Some(ForkDetails::from_network(&fork.network, fork.fork_at, cache_config).await)
@@ -348,7 +350,7 @@ async fn main() -> anyhow::Result<()> {
 
     // If we're replaying the transaction, we need to sync to the previous block
     // and then replay all the transactions that happened in
-    let transactions_to_replay = if let Command::ReplayTx(replay_tx) = &opt.command {
+    let transactions_to_replay = if let Command::ReplayTx(replay_tx) = command {
         fork_details
             .as_ref()
             .unwrap()

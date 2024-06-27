@@ -346,17 +346,25 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
             let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
             blocks.insert(f.l2_block.hash, f.l2_block.clone());
 
+            let mut fee_input_provider = if let Some(params) = f.fee_params {
+                TestNodeFeeInputProvider::from_fee_params_and_estimate_scale_factors(
+                    params,
+                    f.estimate_gas_price_scale_factor,
+                    f.estimate_gas_scale_factor,
+                )
+            } else {
+                TestNodeFeeInputProvider::from_estimate_scale_factors(
+                    f.estimate_gas_price_scale_factor,
+                    f.estimate_gas_scale_factor,
+                )
+            };
+            fee_input_provider.l2_gas_price = config.l2_fair_gas_price;
             InMemoryNodeInner {
                 current_timestamp: f.block_timestamp,
                 current_batch: f.l1_block.0,
                 current_miniblock: f.l2_miniblock,
                 current_miniblock_hash: f.l2_miniblock_hash,
-                fee_input_provider: TestNodeFeeInputProvider::new(
-                    f.l1_gas_price,
-                    config.l2_fair_gas_price,
-                    f.estimate_gas_price_scale_factor,
-                    f.estimate_gas_scale_factor,
-                ),
+                fee_input_provider,
                 tx_results: Default::default(),
                 blocks,
                 block_hashes,
@@ -390,12 +398,7 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
                 current_batch: 0,
                 current_miniblock: 0,
                 current_miniblock_hash: block_hash,
-                fee_input_provider: TestNodeFeeInputProvider::new(
-                    L1_GAS_PRICE,
-                    config.l2_fair_gas_price,
-                    DEFAULT_ESTIMATE_GAS_PRICE_SCALE_FACTOR,
-                    DEFAULT_ESTIMATE_GAS_SCALE_FACTOR,
-                ),
+                fee_input_provider: TestNodeFeeInputProvider::default(),
                 tx_results: Default::default(),
                 blocks,
                 block_hashes,
@@ -1608,11 +1611,17 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
             ..Default::default()
         };
 
-        let bytecodes: HashMap<U256, Vec<U256>> = vm
-            .get_last_tx_compressed_bytecodes()
-            .iter()
-            .map(|b| bytecode_to_factory_dep(b.original.clone()))
-            .collect();
+        let mut bytecodes = HashMap::new();
+        for b in vm.get_last_tx_compressed_bytecodes().iter() {
+            let hashcode = match bytecode_to_factory_dep(b.original.clone()) {
+                Ok(hc) => hc,
+                Err(error) => {
+                    tracing::error!("{}", format!("cannot convert bytecode: {}", error).on_red());
+                    return Err(error.to_string());
+                }
+            };
+            bytecodes.insert(hashcode.0, hashcode.1);
+        }
         if execute_bootloader {
             vm.execute(VmExecutionMode::Bootloader);
         }
@@ -1632,6 +1641,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
     /// Runs L2 transaction and commits it to a new block.
     pub fn run_l2_tx(&self, l2_tx: L2Tx, execution_mode: TxExecutionMode) -> Result<(), String> {
         let tx_hash = l2_tx.hash();
+        let transaction_type = l2_tx.common_data.transaction_type;
 
         tracing::info!("");
         tracing::info!("Validating {}", format!("{:?}", tx_hash).bold());
@@ -1744,7 +1754,8 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
                 U64::from(1)
             },
             effective_gas_price: Some(inner.fee_input_provider.l2_gas_price.into()),
-            ..Default::default()
+            transaction_type: Some((transaction_type as u32).into()),
+            logs_bloom: Default::default(),
         };
         let debug = create_debug_output(&l2_tx, &result, call_traces).expect("create debug output"); // OK to unwrap here as Halt is handled above
         inner.tx_results.insert(
@@ -1978,6 +1989,7 @@ mod tests {
                 overwrite_chain_id: None,
                 l1_gas_price: 1000,
                 l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
+                fee_params: None,
                 estimate_gas_price_scale_factor: DEFAULT_ESTIMATE_GAS_PRICE_SCALE_FACTOR,
                 estimate_gas_scale_factor: DEFAULT_ESTIMATE_GAS_SCALE_FACTOR,
                 cache_config: CacheConfig::default(),

@@ -312,7 +312,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                 tracing::info!("👷 Network reset");
                 Ok(true)
             }
-            Err(error) => {
+            Err(error) => Err(anyhow!(error.to_string())),
                 Err(anyhow!(error.to_string()));
             }
         }

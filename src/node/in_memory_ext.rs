@@ -313,7 +313,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                 Ok(true)
             }
             Err(error) => {
-                return Err(anyhow!(error.to_string()));
+                Err(anyhow!(error.to_string()));
             }
         }
     }

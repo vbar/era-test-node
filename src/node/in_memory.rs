@@ -1115,11 +1115,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
             .observability
             .clone();
 
-        let l2_gas_price = if let Some(ref f) = fork {
-            Some(f.l2_fair_gas_price)
-        } else {
-            None
-        };
+        let l2_gas_price = fork.as_ref().map(|f| f.l2_fair_gas_price);
         let config = self.get_config(l2_gas_price)?;
 
         let inner = InMemoryNodeInner::new(fork, observability, config);

@@ -2102,3 +2102,4 @@ pub fn load_last_l1_batch<S: ReadStorage>(storage: StoragePtr<S>) -> Option<(u64
     }
     Some((batch_number, batch_timestamp))
 }
+

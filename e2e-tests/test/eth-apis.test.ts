@@ -59,6 +59,6 @@ describe("eth_sendTransaction", function () {
       await provider.send("eth_sendTransaction", [transaction]);
     };
 
-    await expectThrowsAsync(action);
+    await expectThrowsAsync(action, "not allowed to perform transactions");
   });
 });

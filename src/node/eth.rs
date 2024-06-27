@@ -30,8 +30,8 @@ use crate::{
     namespaces::{EthNamespaceT, EthTestNodeNamespaceT, RpcResult},
     node::{InMemoryNode, TransactionResult, MAX_TX_SIZE, PROTOCOL_VERSION},
     utils::{
-        self, h256_to_u64, into_jsrpc_error, not_implemented, report_into_jsrpc_error,
-        IntoBoxedFuture,
+        self, h256_to_u64, into_jsrpc_error, into_jsrpc_error_message, not_implemented,
+        report_into_jsrpc_error, IntoBoxedFuture,
     },
 };
 
@@ -1396,9 +1396,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
                 reader.fee_input_provider.l1_gas_price,
             ),
             Err(_) => {
-                return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
-                    anyhow::Error::msg("Failed to acquire read lock for chain ID retrieval."),
-                )))
+                return futures::future::err(into_jsrpc_error_message(
+                    "Failed to acquire read lock for chain ID retrieval.".to_string(),
+                ))
                 .boxed()
             }
         };
@@ -1413,10 +1413,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         if tx.gas_price.is_some() {
             if tx.max_fee_per_gas.is_some() || tx.max_priority_fee_per_gas.is_some() {
                 let error_message = "Transaction contains unsupported fields: max_fee_per_gas or max_priority_fee_per_gas";
-                return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
-                    anyhow::Error::msg(error_message),
-                )))
-                .boxed();
+                tracing::error!("{}", error_message);
+                return futures::future::err(into_jsrpc_error_message(error_message.to_string()))
+                    .boxed();
             }
         } else {
             tx_req.gas_price = tx.max_fee_per_gas.unwrap_or(U256::from(l1_gas_price));
@@ -1433,8 +1432,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         let hash = match tx_req.get_tx_hash(chain_id) {
             Ok(result) => result,
             Err(e) => {
+                tracing::error!("Transaction request serialization error: {}", e);
                 return futures::future::err(into_jsrpc_error(Web3Error::SerializationError(e)))
-                    .boxed()
+                    .boxed();
             }
         };
         let bytes = tx_req.get_signed_bytes(
@@ -1444,8 +1444,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
         let mut l2_tx: L2Tx = match L2Tx::from_request(tx_req, MAX_TX_SIZE) {
             Ok(tx) => tx,
             Err(e) => {
+                tracing::error!("Transaction serialization error: {}", e);
                 return futures::future::err(into_jsrpc_error(Web3Error::SerializationError(e)))
-                    .boxed()
+                    .boxed();
             }
         };
 
@@ -1466,16 +1467,14 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
                         "Initiator address {:?} is not allowed to perform transactions",
                         l2_tx.common_data.initiator_address
                     );
-                    return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
-                        anyhow::Error::msg(error_message),
-                    )))
-                    .boxed();
+                    tracing::error!("{}", error_message);
+                    return futures::future::err(into_jsrpc_error_message(error_message)).boxed();
                 }
             }
             Err(_) => {
-                return futures::future::err(into_jsrpc_error(Web3Error::InternalError(
-                    anyhow::Error::msg("Failed to acquire read lock for accounts."),
-                )))
+                return futures::future::err(into_jsrpc_error_message(
+                    "Failed to acquire read lock for accounts.".to_string(),
+                ))
                 .boxed()
             }
         }
@@ -1484,11 +1483,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> EthTestNod
             Ok(_) => Ok(l2_tx.hash()).into_boxed_future(),
             Err(e) => {
                 let error_message = format!("Execution error: {}", e);
-                futures::future::err(into_jsrpc_error(Web3Error::SubmitTransactionError(
-                    error_message,
-                    l2_tx.hash().as_bytes().to_vec(),
-                )))
-                .boxed()
+                futures::future::err(into_jsrpc_error_message(error_message)).boxed()
             }
         }
     }

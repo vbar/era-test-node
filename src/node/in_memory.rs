@@ -1009,9 +1009,10 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
 
         let call_tracer_result = Arc::new(OnceCell::default());
 
-        let mut tracers = Vec::new();
-        tracers.push(CallErrorTracer::new().into_tracer_pointer());
-        tracers.push(CallTracer::new(call_tracer_result.clone()).into_tracer_pointer());
+        let tracers = vec![
+            CallErrorTracer::new().into_tracer_pointer(),
+            CallTracer::new(call_tracer_result.clone()).into_tracer_pointer(),
+        ];
         let tx_result = vm.inspect(tracers.into(), VmExecutionMode::OneTx);
 
         let call_traces = Arc::try_unwrap(call_tracer_result)

@@ -1,5 +1,6 @@
 //! In-memory node, that supports forking other networks.
 
+mod call_error_tracer;
 mod config_api;
 mod debug;
 mod eth;

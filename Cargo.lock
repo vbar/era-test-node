@@ -1786,6 +1786,7 @@ dependencies = [
  "toml 0.8.13",
  "tracing",
  "tracing-subscriber",
+ "zk_evm 1.5.0",
  "zkevm_opcode_defs 1.5.0",
  "zksync-web3-rs",
  "zksync_basic_types",

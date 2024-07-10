@@ -85,4 +85,17 @@ pub trait AnvilNamespaceT {
     /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
     #[rpc(name = "anvil_stopImpersonatingAccount")]
     fn stop_impersonating_account(&self, address: Address) -> RpcResult<bool>;
+
+    /// Modifies the bytecode stored at an account's address.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The address where the given code should be stored.
+    /// * `code` - The code to be stored.
+    ///
+    /// # Returns
+    ///
+    /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
+    #[rpc(name = "anvil_setCode")]
+    fn set_code(&self, address: Address, code: Vec<u8>) -> RpcResult<()>;
 }

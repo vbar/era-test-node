@@ -98,4 +98,18 @@ pub trait AnvilNamespaceT {
     /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
     #[rpc(name = "anvil_setCode")]
     fn set_code(&self, address: Address, code: Vec<u8>) -> RpcResult<()>;
+
+    /// Directly modifies the storage of a contract at a specified slot.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The contract address whose storage is to be modified.
+    /// * `slot` - The storage slot to modify.
+    /// * `value` - The value to be set at the specified slot.
+    ///
+    /// # Returns
+    ///
+    /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
+    #[rpc(name = "anvil_setStorageAt")]
+    fn set_storage_at(&self, address: Address, slot: U256, value: U256) -> RpcResult<bool>;
 }

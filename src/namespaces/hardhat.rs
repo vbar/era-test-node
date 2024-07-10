@@ -131,4 +131,16 @@ pub trait HardhatNamespaceT {
     /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
     #[rpc(name = "hardhat_setStorageAt")]
     fn set_storage_at(&self, address: Address, slot: U256, value: U256) -> RpcResult<bool>;
+
+    /// Directly modifies the L1 gas price.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_fee_per_gas` - The new L1 gas price.
+    ///
+    /// # Returns
+    ///
+    /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
+    #[rpc(name = "hardhat_setNextBlockBaseFeePerGas")]
+    fn set_next_block_base_fee_per_gas(&self, base_fee_per_gas: U256) -> RpcResult<bool>;
 }

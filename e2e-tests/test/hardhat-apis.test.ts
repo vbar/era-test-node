@@ -64,6 +64,24 @@ describe("hardhat_mine", function () {
   });
 });
 
+describe("hardhat_setNextBlockBaseFeePerGas", function () {
+  it("should allow setting the next block's base fee per gas", async function () {
+    // Arrange
+    const price = "0x12d687";
+
+    // Act
+    const previous = await provider.send("eth_getBlockByNumber", ["latest", false]);
+    await provider.send("hardhat_setNextBlockBaseFeePerGas", [price]);
+    await provider.send("hardhat_mine");
+    const latest = await provider.send("eth_getBlockByNumber", ["latest", false]);
+    await provider.send("hardhat_setNextBlockBaseFeePerGas", [previous.baseFeePerGas]);
+
+    // Assert
+    expect(previous.baseFeePerGas).to.not.equal(price);
+    expect(latest.baseFeePerGas).to.equal(price);
+  });
+});
+
 describe("hardhat_impersonateAccount & hardhat_stopImpersonatingAccount", function () {
   it("Should allow transfers of funds without knowing the Private Key", async function () {
     // Arrange

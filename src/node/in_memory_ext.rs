@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use anyhow::anyhow;
 use zksync_basic_types::{AccountTreeId, Address, U256, U64};
 use zksync_types::{
@@ -99,7 +101,8 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
             .write()
             .map_err(|err| anyhow!("failed acquiring lock: {:?}", err))
             .and_then(|mut writer| {
-                utils::mine_empty_blocks(&mut writer, 1, 1000)?;
+                let base_fee_per_gas = writer.fee_input_provider.l1_gas_price;
+                utils::mine_empty_blocks(&mut writer, 1, 1000, base_fee_per_gas)?;
                 tracing::info!("👷 Mined block #{}", writer.current_miniblock);
                 Ok("0x0".to_string())
             })
@@ -262,7 +265,13 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                         "Number of blocks must be greater than 0".to_string(),
                     ));
                 }
-                utils::mine_empty_blocks(&mut writer, num_blocks.as_u64(), interval_ms.as_u64())?;
+                let base_fee_per_gas = writer.fee_input_provider.l1_gas_price;
+                utils::mine_empty_blocks(
+                    &mut writer,
+                    num_blocks.as_u64(),
+                    interval_ms.as_u64(),
+                    base_fee_per_gas,
+                )?;
                 tracing::info!("👷 Mined {} blocks", num_blocks);
 
                 Ok(true)
@@ -381,6 +390,25 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
                 let key = StorageKey::new(AccountTreeId::new(address), u256_to_h256(slot));
                 writer.fork_storage.set_value(key, u256_to_h256(value));
                 true
+            })
+    }
+
+    pub fn set_next_block_base_fee_per_gas(&self, base_fee_per_gas: U256) -> Result<bool> {
+        self.get_inner()
+            .write()
+            .map_err(|err| anyhow!("failed acquiring lock: {:?}", err))
+            .and_then(|mut writer| {
+                let l1_gas_price = match base_fee_per_gas.try_into() {
+                    Ok(price) => price,
+                    Err(_) => {
+                        return Err(anyhow!(
+                            "base fee per gas {:?} out of range",
+                            base_fee_per_gas
+                        ));
+                    }
+                };
+                writer.fee_input_provider.l1_gas_price = l1_gas_price;
+                Ok(true)
             })
     }
 }

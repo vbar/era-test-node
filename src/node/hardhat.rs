@@ -82,4 +82,13 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> HardhatNam
             })
             .into_boxed_future()
     }
+
+    fn set_next_block_base_fee_per_gas(&self, base_fee_per_gas: U256) -> RpcResult<bool> {
+        self.set_next_block_base_fee_per_gas(base_fee_per_gas)
+            .map_err(|err| {
+                tracing::error!("failed setting fee: {:?}", err);
+                into_jsrpc_error(Web3Error::InternalError(err))
+            })
+            .into_boxed_future()
+    }
 }

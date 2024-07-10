@@ -92,6 +92,7 @@ pub fn create_empty_block<TX>(
     timestamp: u64,
     batch: u32,
     parent_block_hash: Option<H256>,
+    base_fee_per_gas: U256,
 ) -> Block<TX> {
     let hash = compute_hash(block_number, H256::zero());
     let parent_hash = parent_block_hash.unwrap_or(if block_number == 0 {
@@ -108,6 +109,7 @@ pub fn create_empty_block<TX>(
         transactions: vec![],
         gas_used: U256::from(0),
         gas_limit: U256::from(BATCH_GAS_LIMIT),
+        base_fee_per_gas,
         ..Default::default()
     }
 }
@@ -242,17 +244,18 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
                 observability,
             }
         } else {
+            let fee_input_provider =
+                TestNodeFeeInputProvider::default().with_overrides(gas_overrides);
+            let base_fee_per_gas = U256::from(fee_input_provider.l1_gas_price);
             let mut block_hashes = HashMap::<u64, H256>::new();
             let block_hash = compute_hash(0, H256::zero());
             block_hashes.insert(0, block_hash);
             let mut blocks = HashMap::<H256, Block<TransactionVariant>>::new();
             blocks.insert(
                 block_hash,
-                create_empty_block(0, NON_FORK_FIRST_BLOCK_TIMESTAMP, 0, None),
+                create_empty_block(0, NON_FORK_FIRST_BLOCK_TIMESTAMP, 0, None, base_fee_per_gas),
             );
 
-            let fee_input_provider =
-                TestNodeFeeInputProvider::default().with_overrides(gas_overrides);
             InMemoryNodeInner {
                 current_timestamp: NON_FORK_FIRST_BLOCK_TIMESTAMP,
                 current_batch: 0,
@@ -1604,11 +1607,13 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
         //  You can look at insert_fictive_l2_block function in VM to see how this fake block is inserted.
         let block_ctx = block_ctx.new_block();
         let parent_block_hash = block.hash;
+        let base_fee_per_gas = U256::from(inner.fee_input_provider.l1_gas_price);
         let empty_block_at_end_of_batch = create_empty_block(
             block_ctx.miniblock,
             block_ctx.timestamp,
             block_ctx.batch,
             Some(parent_block_hash),
+            base_fee_per_gas,
         );
 
         inner.current_batch = inner.current_batch.saturating_add(1);
@@ -1790,7 +1795,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_empty_block_creates_genesis_block_with_hash_and_zero_parent_hash() {
-        let first_block = create_empty_block::<TransactionVariant>(0, 1000, 1, None);
+        let first_block =
+            create_empty_block::<TransactionVariant>(0, 1000, 1, None, U256::default());
 
         assert_eq!(first_block.hash, compute_hash(0, H256::zero()));
         assert_eq!(first_block.parent_hash, H256::zero());
@@ -1798,8 +1804,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_empty_block_creates_block_with_parent_hash_link_to_prev_block() {
-        let first_block = create_empty_block::<TransactionVariant>(0, 1000, 1, None);
-        let second_block = create_empty_block::<TransactionVariant>(1, 1000, 1, None);
+        let first_block =
+            create_empty_block::<TransactionVariant>(0, 1000, 1, None, U256::default());
+        let second_block =
+            create_empty_block::<TransactionVariant>(1, 1000, 1, None, U256::default());
 
         assert_eq!(second_block.parent_hash, first_block.hash);
     }
@@ -1811,9 +1819,15 @@ mod tests {
             1000,
             1,
             Some(compute_hash(123, H256::zero())),
+            U256::default(),
         );
-        let second_block =
-            create_empty_block::<TransactionVariant>(1, 1000, 1, Some(first_block.hash));
+        let second_block = create_empty_block::<TransactionVariant>(
+            1,
+            1000,
+            1,
+            Some(first_block.hash),
+            U256::default(),
+        );
 
         assert_eq!(first_block.parent_hash, compute_hash(123, H256::zero()));
         assert_eq!(second_block.parent_hash, first_block.hash);

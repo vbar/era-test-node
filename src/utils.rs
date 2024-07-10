@@ -97,6 +97,7 @@ pub fn mine_empty_blocks<S: std::fmt::Debug + ForkSource>(
     node: &mut InMemoryNodeInner<S>,
     num_blocks: u64,
     interval_ms: u64,
+    base_fee_per_gas: u64,
 ) -> Result<(), anyhow::Error> {
     // build and insert new blocks
     for i in 0..num_blocks {
@@ -155,6 +156,7 @@ pub fn mine_empty_blocks<S: std::fmt::Debug + ForkSource>(
             block_ctx.timestamp,
             block_ctx.batch,
             None,
+            U256::from(base_fee_per_gas),
         );
 
         node.block_hashes.insert(block.number.as_u64(), block.hash);
@@ -403,7 +405,7 @@ mod tests {
 
         {
             let mut writer = inner.write().expect("failed acquiring write lock");
-            mine_empty_blocks(&mut writer, 1, 1000).unwrap();
+            mine_empty_blocks(&mut writer, 1, 1000, 0).unwrap();
         }
 
         let reader = inner.read().expect("failed acquiring reader");
@@ -437,7 +439,7 @@ mod tests {
 
         {
             let mut writer = inner.write().expect("failed acquiring write lock");
-            mine_empty_blocks(&mut writer, 2, 1000).unwrap();
+            mine_empty_blocks(&mut writer, 2, 1000, 0).unwrap();
         }
 
         let reader = inner.read().expect("failed acquiring reader");
@@ -480,7 +482,7 @@ mod tests {
 
         {
             let mut writer = inner.write().expect("failed acquiring write lock");
-            mine_empty_blocks(&mut writer, 2, 1000).unwrap();
+            mine_empty_blocks(&mut writer, 2, 1000, 0).unwrap();
         }
 
         {

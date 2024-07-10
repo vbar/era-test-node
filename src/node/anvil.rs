@@ -11,6 +11,15 @@ use crate::{
 impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> AnvilNamespaceT
     for InMemoryNode<S>
 {
+    fn set_balance(&self, address: Address, balance: U256) -> RpcResult<bool> {
+        self.set_balance(address, balance)
+            .map_err(|err| {
+                tracing::error!("failed setting balance : {:?}", err);
+                into_jsrpc_error(Web3Error::InternalError(err))
+            })
+            .into_boxed_future()
+    }
+
     fn set_nonce(&self, address: Address, balance: U256) -> RpcResult<bool> {
         self.set_nonce(address, balance)
             .map_err(|err| {

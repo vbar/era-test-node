@@ -5,6 +5,19 @@ use super::{ResetRequest, RpcResult};
 
 #[rpc]
 pub trait AnvilNamespaceT {
+    /// Sets the balance of the given address to the given balance.
+    ///
+    /// # Arguments
+    ///
+    /// * `address` - The `Address` whose balance will be edited
+    /// * `balance` - The new balance to set for the given address, in wei
+    ///
+    /// # Returns
+    ///
+    /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
+    #[rpc(name = "anvil_setBalance")]
+    fn set_balance(&self, address: Address, balance: U256) -> RpcResult<bool>;
+
     /// Modifies an account's nonce by overwriting it.
     ///
     /// # Arguments

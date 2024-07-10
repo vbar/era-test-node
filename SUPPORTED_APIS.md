@@ -85,7 +85,7 @@ The `status` options are:
 | [`EVM`](#evm-namespace) | [`evm_revert`](#evm_revert) | `SUPPORTED` | Revert the state of the blockchain to a previous snapshot |
 | `EVM` | `evm_setAccountBalance` | `NOT IMPLEMENTED` | Sets the given account's balance to the specified WEI value |
 | `EVM` | `evm_setAccountCode` | `NOT IMPLEMENTED` | Sets the given account's code to the specified data |
-| `EVM` | `evm_setAccountNonce` | `NOT IMPLEMENTED` | Sets the given account's nonce to the specified value |
+| [`EVM`](#evm-namespace) | [`evm_setAccountNonce`](#evm_setaccountnonce) | `SUPPORTED` | Sets the given account's nonce to the specified value |
 | `EVM` | `evm_setAccountStorageAt` | `NOT IMPLEMENTED` | Sets the given account's storage slot to the specified data |
 | `EVM` | `evm_setAutomine` | `NOT IMPLEMENTED` | Enables or disables the automatic mining of new blocks with each new transaction submitted to the network |
 | `EVM` | `evm_setBlockGasLimit` | `NOT IMPLEMENTED` | Sets the Block Gas Limit of the network |

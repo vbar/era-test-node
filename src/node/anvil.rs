@@ -1,4 +1,4 @@
-use zksync_basic_types::{Address, U256};
+use zksync_basic_types::{Address, U256, U64};
 use zksync_web3_decl::error::Web3Error;
 
 use crate::{
@@ -15,6 +15,15 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> AnvilNames
         self.set_nonce(address, balance)
             .map_err(|err| {
                 tracing::error!("failed setting nonce: {:?}", err);
+                into_jsrpc_error(Web3Error::InternalError(err))
+            })
+            .into_boxed_future()
+    }
+
+    fn hardhat_mine(&self, num_blocks: Option<U64>, interval: Option<U64>) -> RpcResult<bool> {
+        self.mine_blocks(num_blocks, interval)
+            .map_err(|err| {
+                tracing::error!("failed mining blocks: {:?}", err);
                 into_jsrpc_error(Web3Error::InternalError(err))
             })
             .into_boxed_future()

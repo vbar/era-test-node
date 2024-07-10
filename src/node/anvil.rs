@@ -3,7 +3,7 @@ use zksync_web3_decl::error::Web3Error;
 
 use crate::{
     fork::ForkSource,
-    namespaces::{AnvilNamespaceT, RpcResult},
+    namespaces::{AnvilNamespaceT, ResetRequest, RpcResult},
     node::InMemoryNode,
     utils::{into_jsrpc_error, IntoBoxedFuture},
 };
@@ -24,6 +24,15 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> AnvilNames
         self.mine_blocks(num_blocks, interval)
             .map_err(|err| {
                 tracing::error!("failed mining blocks: {:?}", err);
+                into_jsrpc_error(Web3Error::InternalError(err))
+            })
+            .into_boxed_future()
+    }
+
+    fn reset_network(&self, reset_spec: Option<ResetRequest>) -> RpcResult<bool> {
+        self.reset_network(reset_spec)
+            .map_err(|err| {
+                tracing::error!("failed reset: {:?}", err);
                 into_jsrpc_error(Web3Error::InternalError(err))
             })
             .into_boxed_future()

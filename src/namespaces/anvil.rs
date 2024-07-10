@@ -1,7 +1,7 @@
 use jsonrpc_derive::rpc;
 use zksync_basic_types::{Address, U256, U64};
 
-use super::RpcResult;
+use super::{ResetRequest, RpcResult};
 
 #[rpc]
 pub trait AnvilNamespaceT {
@@ -32,6 +32,18 @@ pub trait AnvilNamespaceT {
     /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
     #[rpc(name = "anvil_mine")]
     fn hardhat_mine(&self, num_blocks: Option<U64>, interval: Option<U64>) -> RpcResult<bool>;
+
+    /// Reset the state of the network back to a fresh forked state, or disable forking.
+    ///
+    /// # Arguments
+    ///
+    /// * `reset_spec` - The requested state, defaults to resetting the current network.
+    ///
+    /// # Returns
+    ///
+    /// A `BoxFuture` containing a `Result` with a `bool` representing the success of the operation.
+    #[rpc(name = "anvil_reset")]
+    fn reset_network(&self, reset_spec: Option<ResetRequest>) -> RpcResult<bool>;
 
     /// Era Test Node allows transactions impersonating specific account and contract addresses.
     /// To impersonate an account use this method, passing the address to impersonate as its parameter.

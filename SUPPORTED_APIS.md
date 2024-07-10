@@ -105,7 +105,7 @@ The `status` options are:
 | `HARDHAT` | `hardhat_setCoinbase` | `NOT IMPLEMENTED` | Sets the coinbase address |
 | `HARDHAT` | `hardhat_setLoggingEnabled` | `NOT IMPLEMENTED` | Enables or disables logging in Hardhat Network |
 | `HARDHAT` | `hardhat_setMinGasPrice` | `NOT IMPLEMENTED` | Sets the minimum gas price |
-| `HARDHAT` | `hardhat_setNextBlockBaseFeePerGas` | `NOT IMPLEMENTED` | Sets the base fee per gas for the next block |
+| [`HARDHAT`](#hardhat-namespace) | [`hardhat_setNextBlockBaseFeePerGas`](#hardhat_setnextblockbasefeepergas) | `SUPPORTED` | Sets the base fee per gas for the next block |
 | `HARDHAT` | `hardhat_setPrevRandao` | `NOT IMPLEMENTED` | Sets the PREVRANDAO value of the next block |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setNonce`](#hardhat_setnonce) | `SUPPORTED` | Sets the nonce of a given account |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setStorageAt`](#hardhat_setstorageat) | `SUPPORTED` | Sets the storage value at a given key for a given account |

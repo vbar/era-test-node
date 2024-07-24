@@ -49,10 +49,7 @@ describe("anvil_mine", function () {
     const startingTimestamp: number = await provider.send("config_getCurrentTimestamp", []);
 
     // Act
-    await provider.send("anvil_mine", [
-      ethers.utils.hexlify(numberOfBlocks),
-      ethers.utils.hexlify(intervalInSeconds),
-    ]);
+    await provider.send("anvil_mine", [ethers.utils.hexlify(numberOfBlocks), ethers.utils.hexlify(intervalInSeconds)]);
 
     // Assert
     const latestBlock = await provider.getBlock("latest");

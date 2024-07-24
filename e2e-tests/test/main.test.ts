@@ -63,7 +63,7 @@ describe("Greeter Smart Contract", function () {
     // Validate log is created
     expect(receipt.logs.length).to.greaterThanOrEqual(1);
     var setGreetingLog = null;
-    for (var i = 0; (setGreetingLog == null) && (i < receipt.logs.length); ++i) {
+    for (var i = 0; setGreetingLog == null && i < receipt.logs.length; ++i) {
       if (receipt.logs[i].address == greeter.address) {
         setGreetingLog = receipt.logs[i];
       }
@@ -85,7 +85,7 @@ describe("Greeter Smart Contract", function () {
 
     expect(receipt.logs.length).to.greaterThanOrEqual(1);
     var setGreetingLog = null;
-    for (var i = 0; (setGreetingLog == null) && (i < receipt.logs.length); ++i) {
+    for (var i = 0; setGreetingLog == null && i < receipt.logs.length; ++i) {
       if (receipt.logs[i].address == greeter.address) {
         setGreetingLog = receipt.logs[i];
       }

@@ -167,3 +167,27 @@ describe("anvil_setCode", function () {
     expect(BigNumber.from(result).toNumber()).to.eq(5);
   });
 });
+
+describe("anvil_setStorageAt", function () {
+  it("Should set storage at an address", async function () {
+    const wallet = new Wallet(RichAccounts[0].PrivateKey, provider);
+    const userWallet = Wallet.createRandom().connect(provider);
+    await wallet.sendTransaction({
+      to: userWallet.address,
+      value: ethers.utils.parseEther("3"),
+    });
+
+    const deployer = new Deployer(hre, userWallet);
+    const artifact = await deployer.loadArtifact("MyERC20");
+    const token = await deployer.deploy(artifact, ["MyToken", "MyToken", 18]);
+
+    const before = await provider.send("eth_getStorageAt", [token.address, "0x0", "latest"]);
+    expect(BigNumber.from(before).toNumber()).to.eq(0);
+
+    const value = ethers.utils.hexlify(ethers.utils.zeroPad("0x10", 32));
+    await provider.send("anvil_setStorageAt", [token.address, "0x0", value]);
+
+    const after = await provider.send("eth_getStorageAt", [token.address, "0x0", "latest"]);
+    expect(BigNumber.from(after).toNumber()).to.eq(16);
+  });
+});

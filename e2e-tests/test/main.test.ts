@@ -62,8 +62,13 @@ describe("Greeter Smart Contract", function () {
 
     // Validate log is created
     expect(receipt.logs.length).to.greaterThanOrEqual(1);
-    const setGreetingLog = receipt.logs[0];
-    expect(setGreetingLog.address).to.equal(greeter.address);
+    var setGreetingLog = null;
+    for (var i = 0; (setGreetingLog == null) && (i < receipt.logs.length); ++i) {
+      if (receipt.logs[i].address == greeter.address) {
+        setGreetingLog = receipt.logs[i];
+      }
+    }
+    expect(setGreetingLog).not.to.equal(null);
 
     const eventInterface = new ethers.utils.Interface(["event LogString(string value)"]);
     expect(eventInterface.parseLog(setGreetingLog).args[0]).to.equal("Greeting is being updated to Luke Skywalker");
@@ -78,8 +83,17 @@ describe("Greeter Smart Contract", function () {
     const setGreetingTx = await greeter.setGreeting("Luke Skywalker");
     let receipt: TransactionReceipt = await setGreetingTx.wait();
 
+    expect(receipt.logs.length).to.greaterThanOrEqual(1);
+    var setGreetingLog = null;
+    for (var i = 0; (setGreetingLog == null) && (i < receipt.logs.length); ++i) {
+      if (receipt.logs[i].address == greeter.address) {
+        setGreetingLog = receipt.logs[i];
+      }
+    }
+    expect(setGreetingLog).not.to.equal(null);
+
     // Create filter
-    const topic = receipt.logs[0].topics[0];
+    const topic = setGreetingLog.topics[0];
     const filterId = await provider.send("eth_newFilter", [
       {
         fromBlock: "earliest",

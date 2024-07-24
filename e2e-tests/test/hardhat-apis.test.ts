@@ -68,12 +68,12 @@ describe("hardhat_impersonateAccount & hardhat_stopImpersonatingAccount", functi
   it("Should allow transfers of funds without knowing the Private Key", async function () {
     // Arrange
     const userWallet = Wallet.createRandom().connect(provider);
-    const beforeBalance = await provider.getBalance(RichAccounts[0].Account);
+    const beforeBalance = await provider.getBalance(RichAccounts[5].Account);
 
     // Act
-    await provider.send("hardhat_impersonateAccount", [RichAccounts[0].Account]);
+    await provider.send("hardhat_impersonateAccount", [RichAccounts[5].Account]);
 
-    const signer = await ethers.getSigner(RichAccounts[0].Account);
+    const signer = await ethers.getSigner(RichAccounts[5].Account);
     const tx = {
       to: userWallet.address,
       value: ethers.utils.parseEther("0.42"),
@@ -82,9 +82,11 @@ describe("hardhat_impersonateAccount & hardhat_stopImpersonatingAccount", functi
     const recieptTx = await signer.sendTransaction(tx);
     await recieptTx.wait();
 
+    await provider.send("hardhat_stopImpersonatingAccount", [RichAccounts[5].Account]);
+
     // Assert
     expect((await userWallet.getBalance()).eq(ethers.utils.parseEther("0.42"))).to.true;
-    expect((await provider.getBalance(RichAccounts[0].Account)).eq(beforeBalance.sub(ethers.utils.parseEther("0.42"))))
+    expect((await provider.getBalance(RichAccounts[5].Account)).eq(beforeBalance.sub(ethers.utils.parseEther("0.42"))))
       .to.true;
   });
 });

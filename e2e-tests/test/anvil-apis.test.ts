@@ -1,8 +1,12 @@
 import { expect } from "chai";
 import { Wallet } from "zksync-web3";
+import { deployContract, expectThrowsAsync, getTestProvider } from "../helpers/utils";
 import { RichAccounts } from "../helpers/constants";
-import { getTestProvider } from "../helpers/utils";
 import { ethers } from "hardhat";
+import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
+import * as hre from "hardhat";
+import { keccak256 } from "ethers/lib/utils";
+import { BigNumber } from "ethers";
 
 const provider = getTestProvider();
 
@@ -84,5 +88,82 @@ describe("anvil_impersonateAccount & anvil_stopImpersonatingAccount", function (
     expect((await userWallet.getBalance()).eq(ethers.utils.parseEther("0.42"))).to.true;
     expect((await provider.getBalance(RichAccounts[5].Account)).eq(beforeBalance.sub(ethers.utils.parseEther("0.42"))))
       .to.true;
+  });
+});
+
+describe("anvil_setCode", function () {
+  it("Should set code at an address", async function () {
+    // Arrange
+    const wallet = new Wallet(RichAccounts[0].PrivateKey);
+    const deployer = new Deployer(hre, wallet);
+
+    const address = "0x1000000000000000000000000000000000001111";
+    const artifact = await deployer.loadArtifact("Return5");
+    const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
+
+    // Act
+    await provider.send("anvil_setCode", [address, contractCode]);
+
+    // Assert
+    const result = await provider.send("eth_call", [
+      {
+        to: address,
+        data: keccak256(ethers.utils.toUtf8Bytes("value()")).substring(0, 10),
+        from: wallet.address,
+        gas: "0x1000",
+        gasPrice: "0x0ee6b280",
+        value: "0x0",
+        nonce: "0x1",
+      },
+      "latest",
+    ]);
+    expect(BigNumber.from(result).toNumber()).to.eq(5);
+  });
+
+  it("Should reject invalid code", async function () {
+    const action = async () => {
+      // Arrange
+      const wallet = new Wallet(RichAccounts[0].PrivateKey);
+      const deployer = new Deployer(hre, wallet);
+
+      const address = "0x1000000000000000000000000000000000001111";
+      const artifact = await deployer.loadArtifact("Return5");
+      const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
+      const shortCode = contractCode.slice(0, contractCode.length - 1);
+
+      // Act
+      await provider.send("anvil_setCode", [address, shortCode]);
+    };
+
+    await expectThrowsAsync(action, "bytes must be divisible by 32");
+  });
+
+  it("Should update code with a different smart contract", async function () {
+    // Arrange
+    const wallet = new Wallet(RichAccounts[0].PrivateKey);
+    const deployer = new Deployer(hre, wallet);
+
+    const greeter = await deployContract(deployer, "Greeter", ["Hi"]);
+    expect(await greeter.greet()).to.eq("Hi");
+    const artifact = await deployer.loadArtifact("Return5");
+    const newContractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
+
+    // Act
+    await provider.send("anvil_setCode", [greeter.address, newContractCode]);
+
+    // Assert
+    const result = await provider.send("eth_call", [
+      {
+        to: greeter.address,
+        data: keccak256(ethers.utils.toUtf8Bytes("value()")).substring(0, 10),
+        from: wallet.address,
+        gas: "0x1000",
+        gasPrice: "0x0ee6b280",
+        value: "0x0",
+        nonce: "0x1",
+      },
+      "latest",
+    ]);
+    expect(BigNumber.from(result).toNumber()).to.eq(5);
   });
 });

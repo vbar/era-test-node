@@ -1683,7 +1683,11 @@ mod tests {
         });
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -1728,7 +1732,11 @@ mod tests {
             block_response,
         );
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -1797,7 +1805,11 @@ mod tests {
             block_response,
         );
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -1846,7 +1858,11 @@ mod tests {
         });
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -1883,7 +1899,11 @@ mod tests {
                 .build(),
         );
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -1911,7 +1931,11 @@ mod tests {
                 transaction_count: 0,
             });
             let node = InMemoryNode::<HttpForkSource>::new(
-                Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+                Some(
+                    ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                        .await
+                        .unwrap(),
+                ),
                 None,
                 Default::default(),
                 Default::default(),
@@ -1970,7 +1994,11 @@ mod tests {
             }),
         );
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -2028,7 +2056,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -2071,7 +2103,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -2105,7 +2141,11 @@ mod tests {
             });
 
             let node = InMemoryNode::<HttpForkSource>::new(
-                Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+                Some(
+                    ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                        .await
+                        .unwrap(),
+                ),
                 None,
                 Default::default(),
                 Default::default(),
@@ -2381,7 +2421,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -2477,7 +2521,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -3087,7 +3135,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -3143,7 +3195,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -3239,7 +3295,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),
@@ -3302,7 +3362,11 @@ mod tests {
         );
 
         let node = InMemoryNode::<HttpForkSource>::new(
-            Some(ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None).await),
+            Some(
+                ForkDetails::from_network(&mock_server.url(), None, CacheConfig::None)
+                    .await
+                    .unwrap(),
+            ),
             None,
             Default::default(),
             Default::default(),

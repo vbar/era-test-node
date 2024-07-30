@@ -13,6 +13,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use eyre::eyre;
 use tokio::runtime::Builder;
 use zksync_basic_types::{Address, L1BatchNumber, L2BlockNumber, L2ChainId, H256, U256, U64};
 
@@ -458,28 +459,46 @@ impl ForkDetails {
         miniblock: u64,
         chain_id: Option<L2ChainId>,
         cache_config: CacheConfig,
-    ) -> Self {
+    ) -> eyre::Result<Self> {
         let url = network.to_url();
-        let block_details = client
+        let opt_block_details = match client
             .get_block_details(L2BlockNumber(miniblock as u32))
             .await
-            .unwrap()
-            .unwrap_or_else(|| panic!("Could not find block {:?} in {:?}", miniblock, url));
-
-        let root_hash = block_details
-            .base
-            .root_hash
-            .unwrap_or_else(|| panic!("fork block #{} missing root hash", miniblock));
-        let block = client
-            .get_block_by_hash(root_hash, true)
-            .await
-            .expect("failed retrieving block")
-            .unwrap_or_else(|| {
-                panic!(
+        {
+            Ok(obd) => obd,
+            Err(error) => {
+                return Err(eyre!(error));
+            }
+        };
+        let block_details = match opt_block_details {
+            Some(bd) => bd,
+            None => {
+                return Err(eyre!("Could not find block {:?} in {:?}", miniblock, url));
+            }
+        };
+        let root_hash = match block_details.base.root_hash {
+            Some(rh) => rh,
+            None => {
+                return Err(eyre!("fork block #{} missing root hash", miniblock));
+            }
+        };
+        let opt_block = match client.get_block_by_hash(root_hash, true).await {
+            Ok(ob) => ob,
+            Err(error) => {
+                return Err(eyre!(error));
+            }
+        };
+        let block = match opt_block {
+            Some(b) => b,
+            None => {
+                return Err(eyre!(
                     "Could not find block #{:?} ({:#x}) in {:?}",
-                    miniblock, root_hash, url
-                )
-            });
+                    miniblock,
+                    root_hash,
+                    url
+                ));
+            }
+        };
         let l1_batch_number = block_details.l1_batch_number;
 
         tracing::info!(
@@ -489,21 +508,24 @@ impl ForkDetails {
 
         if !block_details
             .protocol_version
-            .map(supported_protocol_versions)
-            .unwrap_or(false)
+            .map_or(false, supported_protocol_versions)
         {
-            panic!(
-                "This block is using the unsupported protocol version: {:?}. This binary supports versions {}.",
-                block_details.protocol_version,
-                supported_versions_to_string()
-            );
+            return Err(eyre!("This block is using the unsupported protocol version: {:?}. This binary supports versions {}.",
+                             block_details.protocol_version,
+                             supported_versions_to_string()));
         }
 
         let (estimate_gas_price_scale_factor, estimate_gas_scale_factor) =
             network.local_gas_scale_factors();
-        let fee_params = client.get_fee_params().await.ok();
+        let fee_params = match client.get_fee_params().await {
+            Ok(fp) => Some(fp),
+            Err(error) => {
+                tracing::warn!("Cannot get fee params: {:?}", error);
+                None
+            }
+        };
 
-        ForkDetails {
+        Ok(ForkDetails {
             fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config.clone())),
             l1_block: l1_batch_number,
             l2_block: block,
@@ -517,15 +539,24 @@ impl ForkDetails {
             estimate_gas_scale_factor,
             fee_params,
             cache_config,
-        }
+        })
     }
     /// Create a fork from a given network at a given height.
-    pub async fn from_network(fork: &str, fork_at: Option<u64>, cache_config: CacheConfig) -> Self {
+    pub async fn from_network(
+        fork: &str,
+        fork_at: Option<u64>,
+        cache_config: CacheConfig,
+    ) -> eyre::Result<Self> {
         let (network, client) = Self::fork_network_and_client(fork);
         let l2_miniblock = if let Some(fork_at) = fork_at {
             fork_at
         } else {
-            client.get_block_number().await.unwrap().as_u64()
+            match client.get_block_number().await {
+                Ok(bn) => bn.as_u64(),
+                Err(error) => {
+                    return Err(eyre!(error));
+                }
+            }
         };
         Self::from_network_and_miniblock_and_chain(
             network,
@@ -539,15 +570,41 @@ impl ForkDetails {
 
     /// Create a fork from a given network, at a height BEFORE a transaction.
     /// This will allow us to apply this transaction locally on top of this fork.
-    pub async fn from_network_tx(fork: &str, tx: H256, cache_config: CacheConfig) -> Self {
+    pub async fn from_network_tx(
+        fork: &str,
+        tx: H256,
+        cache_config: CacheConfig,
+    ) -> eyre::Result<Self> {
         let (network, client) = Self::fork_network_and_client(fork);
-        let tx_details = client.get_transaction_by_hash(tx).await.unwrap().unwrap();
-        let overwrite_chain_id = Some(
-            L2ChainId::try_from(tx_details.chain_id.as_u64()).unwrap_or_else(|err| {
-                panic!("erroneous chain id {}: {:?}", tx_details.chain_id, err,)
-            }),
-        );
-        let miniblock_number = L2BlockNumber(tx_details.block_number.unwrap().as_u32());
+        let opt_tx_details = match client.get_transaction_by_hash(tx).await {
+            Ok(otd) => otd,
+            Err(error) => {
+                return Err(eyre!(error));
+            }
+        };
+        let tx_details = match opt_tx_details {
+            Some(td) => td,
+            None => {
+                return Err(eyre!("could not find {:?}", tx));
+            }
+        };
+        let overwrite_chain_id = match L2ChainId::try_from(tx_details.chain_id.as_u64()) {
+            Ok(cid) => cid,
+            Err(error) => {
+                return Err(eyre!(
+                    "erroneous chain id {}: {:?}",
+                    tx_details.chain_id,
+                    error
+                ));
+            }
+        };
+        let block_number = match tx_details.block_number {
+            Some(bn) => bn,
+            None => {
+                return Err(eyre!("tx {:?} has no block number", tx));
+            }
+        };
+        let miniblock_number = L2BlockNumber(block_number.as_u32());
         // We have to sync to the one-miniblock before the one where transaction is.
         let l2_miniblock = miniblock_number.saturating_sub(1) as u64;
 
@@ -555,7 +612,7 @@ impl ForkDetails {
             network,
             client,
             l2_miniblock,
-            overwrite_chain_id,
+            Some(overwrite_chain_id),
             cache_config,
         )
         .await
@@ -583,14 +640,14 @@ impl ForkDetails {
                 client.get_block_number().await?.as_u64()
             };
 
-            Ok(Self::from_network_and_miniblock_and_chain(
+            Self::from_network_and_miniblock_and_chain(
                 ForkNetwork::Other(url),
                 client,
                 l2_miniblock,
                 None,
                 cache_config,
             )
-            .await)
+            .await
         })
     }
 

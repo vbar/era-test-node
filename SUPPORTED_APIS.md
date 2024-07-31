@@ -22,9 +22,6 @@ The `status` options are:
 | `ANVIL` | `anvil_setBalance` | `SUPPORTED` | Modifies the balance of an account |
 | `ANVIL` | `anvil_setCode` | `SUPPORTED` | Sets the bytecode of a given account |
 | `ANVIL` | `anvil_setStorageAt` | `SUPPORTED` | Sets the storage value at a given key for a given account |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | [`CONFIG`](#config-namespace) | [`config_getShowCalls`](#config_getshowcalls) | `SUPPORTED` | Gets the current value of `show_calls` that's originally set with `--show-calls` option |
 | [`CONFIG`](#config-namespace) | [`config_getShowOutputs`](#config_getshowoutputs) | `SUPPORTED` | Gets the current value of `show_outputs` that's originally set with `--show-outputs` option |
 | [`CONFIG`](#config-namespace) | [`config_getCurrentTimestamp`](#config_getcurrenttimestamp) | `SUPPORTED` | Gets the value of `current_timestamp` for the node |
@@ -36,16 +33,10 @@ The `status` options are:
 | [`CONFIG`](#config-namespace) | [`config_setShowGasDetails`](#config_setshowgasdetails) | `SUPPORTED` | Updates `show_gas_details` to print more details about gas estimation and usage |
 | [`CONFIG`](#config-namespace) | [`config_setLogLevel`](#config_setloglevel) | `SUPPORTED` | Sets the logging level for the node and only displays the node logs. |
 | [`CONFIG`](#config-namespace) | [`config_setLogging`](#config_setlogging) | `SUPPORTED` | Sets the fine-tuned logging levels for the node and any of its dependencies |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | [`DEBUG`](#debug-namespace) | [`debug_traceCall`](#debug_tracecall) | `SUPPORTED` | Performs a call and returns structured traces of the execution |
 | [`DEBUG`](#debug-namespace) | [`debug_traceBlockByHash`](#debug_traceblockbyhash) | `SUPPORTED` | Returns structured traces for operations within the block of the specified block hash |
 | [`DEBUG`](#debug-namespace) | [`debug_traceBlockByNumber`](#debug_traceblockbynumber) | `SUPPORTED` | Returns structured traces for operations within the block of the specified block number |
 | [`DEBUG`](#debug-namespace) | [`debug_traceTransaction`](#debug_tracetransaction) | `SUPPORTED` | Returns a structured trace of the execution of the specified transaction |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | `ETH` | `eth_accounts` | `SUPPORTED` | Returns a list of addresses owned by client |
 | [`ETH`](#eth-namespace) | [`eth_chainId`](#eth_chainid) | `SUPPORTED` | Returns the currently configured chain id <br />_(default is `260`)_ |
 | `ETH` | `eth_coinbase` | `NOT IMPLEMENTED` | Returns the client coinbase address |
@@ -95,9 +86,6 @@ The `status` options are:
 | [`ETH`](#eth-namespace) | [`eth_syncing`](#eth_syncing) | `SUPPORTED` | Returns an object containing data about the sync status or `false` when not syncing |
 | [`ETH`](#eth-namespace) | [`eth_uninstallFilter`](#`eth_uninstallfilter) | `SUPPORTED` | Uninstalls a filter with given id |
 | `ETH` | `eth_unsubscribe` | `NOT IMPLEMENTED` | Cancel a subscription to a particular event |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | `EVM` | `evm_addAccount` | `NOT IMPLEMENTED` | Adds any arbitrary account |
 | [`EVM`](#evm-namespace) | [`evm_increaseTime`](#evm_increasetime) | `SUPPORTED` | Jump forward in time by the given amount of time, in seconds |
 | [`EVM`](#evm-namespace) | [`evm_mine`](#evm_mine) | `SUPPORTED` | Force a single block to be mined |
@@ -113,9 +101,6 @@ The `status` options are:
 | [`EVM`](#evm-namespace) | [`evm_setNextBlockTimestamp`](#evm_setnextblocktimestamp) | `SUPPORTED` | Works like `evm_increaseTime`, but takes the exact timestamp that you want in the next block, and increases the time accordingly |
 | [`EVM`](#evm-namespace) | [`evm_setTime`](#evm_settime) | `SUPPORTED` | Sets the internal clock time to the given timestamp |
 | [`EVM`](#evm-namespace) | [`evm_snapshot`](#evm_snapshot) | `SUPPORTED` | Snapshot the state of the blockchain at the current block |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | `HARDHAT` | `hardhat_addCompilationResult` | `NOT IMPLEMENTED` | Add information about compiled contracts |
 | `HARDHAT` | `hardhat_dropTransaction` | `NOT IMPLEMENTED` | Remove a transaction from the mempool |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_impersonateAccount`](#hardhat_impersonateaccount) | `SUPPORTED` | Impersonate an account |
@@ -133,19 +118,10 @@ The `status` options are:
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setNonce`](#hardhat_setnonce) | `SUPPORTED` | Sets the nonce of a given account |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setStorageAt`](#hardhat_setstorageat) | `SUPPORTED` | Sets the storage value at a given key for a given account |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_stopImpersonatingAccount`](#hardhat_stopimpersonatingaccount) | `SUPPORTED` | Stop impersonating an account after having previously used `hardhat_impersonateAccount` |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | [`NETWORK`](#network-namespace) | [`net_version`](#net_version) | `SUPPORTED` | Returns the current network id <br />_(default is `260`)_ |
 | [`NETWORK`](#network-namespace) | [`net_peerCount`](#net_peercount) | `SUPPORTED` | Returns the number of peers currently connected to the client <br/>_(hard-coded to `0`)_ |
 | [`NETWORK`](#network-namespace) | [`net_listening`](#net_listening) | `SUPPORTED` | Returns `true` if the client is actively listening for network connections <br />_(hard-coded to `false`)_ |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | [`WEB3`](#web3-namespace) | [`web3_clientVersion`](#web3_clientversion) | `SUPPORTED` | Returns `zkSync/v2.0` |
-
-| Namespace | API | <div style="width:130px">Status</div> | Description |
-| --- | --- | --- | --- |
 | [`ZKS`](#zks-namespace) | [`zks_estimateFee`](#zks_estimateFee) | `SUPPORTED` | Gets the Fee estimation data for a given Request |
 | `ZKS` | `zks_estimateGasL1ToL2` | `NOT IMPLEMENTED` | Estimate of the gas required for a L1 to L2 transaction |
 | [`ZKS`](#zks-namespace) | [`zks_getAllAccountBalances`](#zks_getallaccountbalances) | `SUPPORTED` | Returns all balances for confirmed tokens given by an account address |

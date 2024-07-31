@@ -14,14 +14,14 @@ The `status` options are:
 
 | Namespace | API | <div style="width:130px">Status</div> | Description |
 | --- | --- | --- | --- |
-| [`ANVIL`](#anvil-namespace) | [`anvil_setNonce`](#anvil_setnonce) | `SUPPORTED` | Sets the nonce of a given account |
-| [`ANVIL`](#anvil-namespace) | [`anvil_impersonateAccount`](#anvil_impersonateaccount) | `SUPPORTED` | Impersonate an account |
-| [`ANVIL`](#anvil-namespace) | [`anvil_stopImpersonatingAccount`](#anvil_stopimpersonatingaccount) | `SUPPORTED` | Stop impersonating an account after having previously used `anvil_impersonateAccount` |
-| [`ANVIL`](#anvil-namespace) | [`anvil_reset`](#anvil_reset) | `PARTIALLY` | Resets the state of the network; cannot revert to past block numbers, unless they're in a fork |
-| [`ANVIL`](#anvil-namespace) | [`anvil_mine`](#anvil_mine) | `SUPPORTED` | Mine any number of blocks at once, in constant time |
-| [`ANVIL`](#anvil-namespace) | [`anvil_setBalance`](#anvil_setbalance) | `SUPPORTED` | Modifies the balance of an account |
-| [`ANVIL`](#anvil-namespace) | [`anvil_setCode`](#anvil_setcode) | `SUPPORTED` | Sets the bytecode of a given account |
-| [`ANVIL`](#anvil-namespace) | [`anvil_setStorageAt`](#anvil_setstorageat) | `SUPPORTED` | Sets the storage value at a given key for a given account |
+| `ANVIL` | `anvil_setNonce` | `SUPPORTED` | Sets the nonce of a given account |
+| `ANVIL` | `anvil_impersonateAccount` | `SUPPORTED` | Impersonate an account |
+| `ANVIL` | `anvil_stopImpersonatingAccount` | `SUPPORTED` | Stop impersonating an account after having previously used `anvil_impersonateAccount` |
+| `ANVIL` | `anvil_reset` | `PARTIALLY` | Resets the state of the network; cannot revert to past block numbers, unless they're in a fork |
+| `ANVIL` | `anvil_mine` | `SUPPORTED` | Mine any number of blocks at once, in constant time |
+| `ANVIL` | `anvil_setBalance` | `SUPPORTED` | Modifies the balance of an account |
+| `ANVIL` | `anvil_setCode` | `SUPPORTED` | Sets the bytecode of a given account |
+| `ANVIL` | `anvil_setStorageAt` | `SUPPORTED` | Sets the storage value at a given key for a given account |
 | [`CONFIG`](#config-namespace) | [`config_getShowCalls`](#config_getshowcalls) | `SUPPORTED` | Gets the current value of `show_calls` that's originally set with `--show-calls` option |
 | [`CONFIG`](#config-namespace) | [`config_getShowOutputs`](#config_getshowoutputs) | `SUPPORTED` | Gets the current value of `show_outputs` that's originally set with `--show-outputs` option |
 | [`CONFIG`](#config-namespace) | [`config_getCurrentTimestamp`](#config_getcurrenttimestamp) | `SUPPORTED` | Gets the value of `current_timestamp` for the node |

@@ -470,35 +470,26 @@ impl ForkDetails {
                 return Err(eyre!(error));
             }
         };
-        let block_details = match opt_block_details {
-            Some(bd) => bd,
-            None => {
-                return Err(eyre!("Could not find block {:?} in {:?}", miniblock, url));
-            }
-        };
-        let root_hash = match block_details.base.root_hash {
-            Some(rh) => rh,
-            None => {
-                return Err(eyre!("fork block #{} missing root hash", miniblock));
-            }
-        };
+        let block_details = opt_block_details
+            .ok_or_else(|| eyre!("Could not find block {:?} in {:?}", miniblock, url))?;
+        let root_hash = block_details
+            .base
+            .root_hash
+            .ok_or_else(|| eyre!("fork block #{} missing root hash", miniblock))?;
         let opt_block = match client.get_block_by_hash(root_hash, true).await {
             Ok(ob) => ob,
             Err(error) => {
                 return Err(eyre!(error));
             }
         };
-        let block = match opt_block {
-            Some(b) => b,
-            None => {
-                return Err(eyre!(
-                    "Could not find block #{:?} ({:#x}) in {:?}",
-                    miniblock,
-                    root_hash,
-                    url
-                ));
-            }
-        };
+        let block = opt_block.ok_or_else(|| {
+            eyre!(
+                "Could not find block #{:?} ({:#x}) in {:?}",
+                miniblock,
+                root_hash,
+                url
+            )
+        })?;
         let l1_batch_number = block_details.l1_batch_number;
 
         tracing::info!(
@@ -582,12 +573,7 @@ impl ForkDetails {
                 return Err(eyre!(error));
             }
         };
-        let tx_details = match opt_tx_details {
-            Some(td) => td,
-            None => {
-                return Err(eyre!("could not find {:?}", tx));
-            }
-        };
+        let tx_details = opt_tx_details.ok_or_else(|| eyre!("could not find {:?}", tx))?;
         let overwrite_chain_id = match L2ChainId::try_from(tx_details.chain_id.as_u64()) {
             Ok(cid) => cid,
             Err(error) => {
@@ -598,12 +584,9 @@ impl ForkDetails {
                 ));
             }
         };
-        let block_number = match tx_details.block_number {
-            Some(bn) => bn,
-            None => {
-                return Err(eyre!("tx {:?} has no block number", tx));
-            }
-        };
+        let block_number = tx_details
+            .block_number
+            .ok_or_else(|| eyre!("tx {:?} has no block number", tx))?;
         let miniblock_number = L2BlockNumber(block_number.as_u32());
         // We have to sync to the one-miniblock before the one where transaction is.
         let l2_miniblock = miniblock_number.saturating_sub(1) as u64;

@@ -305,9 +305,14 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
         .new_batch();
 
         let fee_input_provider = self.fee_input_provider.clone();
+        // we can get the previous block hash right after forking, but
+        // not afterwards (b/c L1 communication is not supported)
+        let previous_batch_hash = match self.fork_storage.take_l1_block_hash() {
+            Ok(l1_block_hash) => l1_block_hash,
+            Err(_) => None,
+        };
         let batch_env = L1BatchEnv {
-            // TODO: set the previous batch hash properly (take from fork, when forking, and from local storage, when this is not the first block).
-            previous_batch_hash: None,
+            previous_batch_hash,
             number: L1BatchNumber::from(block_ctx.batch),
             timestamp: block_ctx.timestamp,
             fee_input: block_on(async move {
@@ -1836,6 +1841,7 @@ mod tests {
             Some(ForkDetails {
                 fork_source: Box::new(mock_db),
                 l1_block: L1BatchNumber(1),
+                l1_block_hash: None,
                 l2_block: Block::default(),
                 l2_miniblock: 2,
                 l2_miniblock_hash: Default::default(),

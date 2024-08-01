@@ -171,6 +171,19 @@ impl<S: ForkSource> ForkStorage<S> {
         }
     }
 
+    pub fn take_l1_block_hash(&self) -> Result<Option<H256>, String> {
+        let mut writer = self
+            .inner
+            .write()
+            .map_err(|e| format!("Failed to acquire write lock: {}", e))?;
+        let l1_block_hash = if let Some(ref mut fork_details) = writer.fork {
+            fork_details.l1_block_hash.take()
+        } else {
+            None
+        };
+        Ok(l1_block_hash)
+    }
+
     pub fn read_value_internal(
         &self,
         key: &StorageKey,
@@ -388,6 +401,8 @@ pub struct ForkDetails {
     pub fork_source: Box<dyn ForkSource + Send + Sync>,
     // Block number at which we forked (the next block to create is l1_block + 1)
     pub l1_block: L1BatchNumber,
+    // Hash of l1_block
+    pub l1_block_hash: Option<H256>,
     // The actual L2 block
     pub l2_block: zksync_types::api::Block<zksync_types::api::TransactionVariant>,
     pub l2_miniblock: u64,
@@ -440,6 +455,7 @@ impl fmt::Debug for ForkDetails {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ForkDetails")
             .field("l1_block", &self.l1_block)
+            .field("l1_block_hash", &self.l1_block_hash)
             .field("l2_block", &self.l2_block)
             .field("l2_miniblock", &self.l2_miniblock)
             .field("l2_miniblock_hash", &self.l2_miniblock_hash)
@@ -482,9 +498,19 @@ impl ForkDetails {
             });
         let l1_batch_number = block_details.l1_batch_number;
 
+        // fails in tests
+        let opt_l1_batch = match client.get_l1_batch_details(l1_batch_number).await {
+            Ok(ob) => ob,
+            Err(error) => {
+                tracing::warn!("cannot get L1 batch details: {:?}", error);
+                None
+            }
+        };
+        let l1_block_hash = opt_l1_batch.and_then(|l1_batch| l1_batch.base.root_hash);
+
         tracing::info!(
-            "Creating fork from {:?} L1 block: {:?} L2 block: {:?} with timestamp {:?}, L1 gas price {:?}, L2 fair gas price {:?} and protocol version: {:?}" ,
-            url, l1_batch_number, miniblock, block_details.base.timestamp, block_details.base.l1_gas_price, block_details.base.l2_fair_gas_price, block_details.protocol_version
+            "Creating fork from {:?} L1 block: {:?} ({:?}) L2 block: {:?} with timestamp {:?}, L1 gas price {:?}, L2 fair gas price {:?} and protocol version: {:?}" ,
+            url, l1_batch_number, l1_block_hash, miniblock, block_details.base.timestamp, block_details.base.l1_gas_price, block_details.base.l2_fair_gas_price, block_details.protocol_version
         );
 
         if !block_details
@@ -506,6 +532,7 @@ impl ForkDetails {
         ForkDetails {
             fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config.clone())),
             l1_block: l1_batch_number,
+            l1_block_hash,
             l2_block: block,
             block_timestamp: block_details.base.timestamp,
             l2_miniblock: miniblock,
@@ -680,6 +707,7 @@ mod tests {
         let fork_details = ForkDetails {
             fork_source: Box::new(external_storage),
             l1_block: L1BatchNumber(1),
+            l1_block_hash: None,
             l2_block: zksync_types::api::Block::<TransactionVariant>::default(),
             l2_miniblock: 1,
             l2_miniblock_hash: H256::zero(),

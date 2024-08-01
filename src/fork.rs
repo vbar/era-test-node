@@ -507,10 +507,14 @@ impl ForkDetails {
             }
         };
         let l1_block_hash = opt_l1_batch.and_then(|l1_batch| l1_batch.base.root_hash);
-
+        let l1_block_hash_str = if let Some(hash) = l1_block_hash {
+            format!(" (0x{})", hex::encode(hash))
+        } else {
+            String::new()
+        };
         tracing::info!(
-            "Creating fork from {:?} L1 block: {:?} ({:?}) L2 block: {:?} with timestamp {:?}, L1 gas price {:?}, L2 fair gas price {:?} and protocol version: {:?}" ,
-            url, l1_batch_number, l1_block_hash, miniblock, block_details.base.timestamp, block_details.base.l1_gas_price, block_details.base.l2_fair_gas_price, block_details.protocol_version
+            "Creating fork from {:?} L1 block: {:?}{} L2 block: {:?} with timestamp {:?}, L1 gas price {:?}, L2 fair gas price {:?} and protocol version: {:?}" ,
+            url, l1_batch_number, l1_block_hash_str, miniblock, block_details.base.timestamp, block_details.base.l1_gas_price, block_details.base.l2_fair_gas_price, block_details.protocol_version
         );
 
         if !block_details

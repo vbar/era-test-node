@@ -105,7 +105,7 @@ The `status` options are:
 | `HARDHAT` | `hardhat_setCoinbase` | `NOT IMPLEMENTED` | Sets the coinbase address |
 | `HARDHAT` | `hardhat_setLoggingEnabled` | `NOT IMPLEMENTED` | Enables or disables logging in Hardhat Network |
 | `HARDHAT` | `hardhat_setMinGasPrice` | `NOT IMPLEMENTED` | Sets the minimum gas price |
-| [`HARDHAT`](#hardhat-namespace) | `hardhat_setNextBlockBaseFeePerGas` | `SUPPORTED` | Sets the base fee per gas for the next block |
+| [`HARDHAT`](#hardhat-namespace) | [`hardhat_setNextBlockBaseFeePerGas`](#hardhat_setnextblockbasefeepergas) | `SUPPORTED` | Sets the base fee per gas for the next block |
 | `HARDHAT` | `hardhat_setPrevRandao` | `NOT IMPLEMENTED` | Sets the PREVRANDAO value of the next block |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setNonce`](#hardhat_setnonce) | `SUPPORTED` | Sets the nonce of a given account |
 | [`HARDHAT`](#hardhat-namespace) | [`hardhat_setStorageAt`](#hardhat_setstorageat) | `SUPPORTED` | Sets the storage value at a given key for a given account |
@@ -1498,6 +1498,36 @@ curl --request POST \
       "params": [
         "0x36615Cf349d7F6344891B1e7CA7C72883F5dc049",
         "0x1337"
+      ]
+  }'
+```
+
+### hardhat_setNextBlockBaseFeePerGas
+
+[source](src/node/hardhat.rs)
+
+Sets the L1 fee per gas for the following transactions.
+
+#### Arguments
+
++ `base_fee_per_gas: U256` - The new L1 gas price
+
+#### Status
+
+`SUPPORTED`
+
+#### Example
+
+```bash
+curl --request POST \
+  --url http://localhost:8011/ \
+  --header 'content-type: application/json' \
+  --data '{
+    "jsonrpc": "2.0",
+      "id": "1",
+      "method": "hardhat_setNextBlockBaseFeePerGas",
+      "params": [
+        "0x12d687"
       ]
   }'
 ```

@@ -461,27 +461,20 @@ impl ForkDetails {
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
         let url = network.to_url();
-        let opt_block_details = match client
+        let opt_block_details = client
             .get_block_details(L2BlockNumber(miniblock as u32))
             .await
-        {
-            Ok(obd) => obd,
-            Err(error) => {
-                return Err(eyre!(error));
-            }
-        };
+            .map_err(|error| eyre!(error))?;
         let block_details = opt_block_details
             .ok_or_else(|| eyre!("Could not find block {:?} in {:?}", miniblock, url))?;
         let root_hash = block_details
             .base
             .root_hash
             .ok_or_else(|| eyre!("fork block #{} missing root hash", miniblock))?;
-        let opt_block = match client.get_block_by_hash(root_hash, true).await {
-            Ok(ob) => ob,
-            Err(error) => {
-                return Err(eyre!(error));
-            }
-        };
+        let opt_block = client
+            .get_block_by_hash(root_hash, true)
+            .await
+            .map_err(|error| eyre!(error))?;
         let block = opt_block.ok_or_else(|| {
             eyre!(
                 "Could not find block #{:?} ({:#x}) in {:?}",
@@ -567,23 +560,13 @@ impl ForkDetails {
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
         let (network, client) = Self::fork_network_and_client(fork);
-        let opt_tx_details = match client.get_transaction_by_hash(tx).await {
-            Ok(otd) => otd,
-            Err(error) => {
-                return Err(eyre!(error));
-            }
-        };
+        let opt_tx_details = client
+            .get_transaction_by_hash(tx)
+            .await
+            .map_err(|error| eyre!(error))?;
         let tx_details = opt_tx_details.ok_or_else(|| eyre!("could not find {:?}", tx))?;
-        let overwrite_chain_id = match L2ChainId::try_from(tx_details.chain_id.as_u64()) {
-            Ok(cid) => cid,
-            Err(error) => {
-                return Err(eyre!(
-                    "erroneous chain id {}: {:?}",
-                    tx_details.chain_id,
-                    error
-                ));
-            }
-        };
+        let overwrite_chain_id = L2ChainId::try_from(tx_details.chain_id.as_u64())
+            .map_err(|error| eyre!("erroneous chain id {}: {:?}", tx_details.chain_id, error))?;
         let block_number = tx_details
             .block_number
             .ok_or_else(|| eyre!("tx {:?} has no block number", tx))?;
@@ -608,12 +591,7 @@ impl ForkDetails {
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
         let parsed_url = SensitiveUrl::from_str(&url)?;
-        let builder = match Client::http(parsed_url) {
-            Ok(b) => b,
-            Err(error) => {
-                return Err(eyre::Report::msg(error));
-            }
-        };
+        let builder = Client::http(parsed_url).map_err(|error| eyre!(error))?;
         let client = builder.build();
 
         block_on(async move {

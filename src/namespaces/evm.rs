@@ -32,7 +32,7 @@ pub trait EvmNamespaceT {
     /// # Returns
     /// The new timestamp value for the InMemoryNodeInner.
     #[rpc(name = "evm_setNextBlockTimestamp")]
-    fn set_next_block_timestamp(&self, timestamp: u64) -> RpcResult<u64>;
+    fn set_next_block_timestamp(&self, timestamp: U64) -> RpcResult<U64>;
 
     /// Set the current timestamp for the node.
     /// Warning: This will allow you to move backwards in time, which may cause new blocks to appear to be

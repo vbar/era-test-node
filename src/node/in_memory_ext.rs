@@ -56,14 +56,14 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
             .map_err(|err| anyhow!("failed acquiring lock: {:?}", err))
             .and_then(|mut writer| {
                 let ts = timestamp.as_u64();
-                if ts < writer.current_timestamp {
+                if ts <= writer.current_timestamp {
                     Err(anyhow!(
                         "timestamp ({}) must be greater than current timestamp ({})",
                         ts,
                         writer.current_timestamp
                     ))
                 } else {
-                    writer.current_timestamp = ts;
+                    writer.current_timestamp = ts - 1;
                     Ok(timestamp)
                 }
             })
@@ -757,7 +757,7 @@ mod tests {
             "erroneous response"
         );
         assert_eq!(
-            new_timestamp, timestamp_after,
+            new_timestamp, timestamp_after + 1,
             "timestamp was not set correctly",
         );
     }
@@ -792,22 +792,16 @@ mod tests {
             .map(|inner| inner.current_timestamp)
             .expect("failed reading timestamp");
         assert_eq!(timestamp_before, new_timestamp, "timestamps must be same");
-        let expected_response = new_timestamp;
 
-        let actual_response = node
-            .set_next_block_timestamp(new_timestamp.into())
-            .expect("failed setting timestamp");
+        let response = node
+            .set_next_block_timestamp(new_timestamp.into());
+        assert!(response.is_err());
+
         let timestamp_after = node
             .get_inner()
             .read()
             .map(|inner| inner.current_timestamp)
             .expect("failed reading timestamp");
-
-        assert_eq!(
-            expected_response,
-            actual_response.as_u64(),
-            "erroneous response"
-        );
         assert_eq!(
             timestamp_before, timestamp_after,
             "timestamp must not change",

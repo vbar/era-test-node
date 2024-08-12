@@ -24,7 +24,7 @@ pub trait EvmNamespaceT {
     #[rpc(name = "evm_mine")]
     fn evm_mine(&self) -> RpcResult<String>;
 
-    /// Set the current timestamp for the node. The timestamp must be in future.
+    /// Set timestamp for the next block. The timestamp must be in future.
     ///
     /// # Parameters
     /// - `timestamp`: The timestamp to set the time to

@@ -757,7 +757,8 @@ mod tests {
             "erroneous response"
         );
         assert_eq!(
-            new_timestamp, timestamp_after + 1,
+            new_timestamp,
+            timestamp_after + 1,
             "timestamp was not set correctly",
         );
     }
@@ -793,8 +794,7 @@ mod tests {
             .expect("failed reading timestamp");
         assert_eq!(timestamp_before, new_timestamp, "timestamps must be same");
 
-        let response = node
-            .set_next_block_timestamp(new_timestamp.into());
+        let response = node.set_next_block_timestamp(new_timestamp.into());
         assert!(response.is_err());
 
         let timestamp_after = node

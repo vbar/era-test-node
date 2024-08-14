@@ -356,7 +356,9 @@ impl<S: ForkSource + std::fmt::Debug + Clone + Send + Sync + 'static> InMemoryNo
             .and_then(|mut writer| {
                 let code_key = get_code_key(&address);
                 tracing::info!("set code for address {address:#x}");
-                let code_slice = code.strip_prefix("0x").unwrap_or(&code);
+                let code_slice = code
+                    .strip_prefix("0x")
+                    .ok_or_else(|| anyhow!("code must be 0x-prefixed"))?;
                 let code_bytes = hex::decode(code_slice)?;
                 let hashcode = bytecode_to_factory_dep(code_bytes)?;
                 let hash = u256_to_h256(hashcode.0);
@@ -598,7 +600,7 @@ mod tests {
             .0;
         assert_eq!(Vec::<u8>::default(), code_before);
 
-        node.set_code(address, hex::encode(new_code.clone()))
+        node.set_code(address, format!("0x{}", hex::encode(new_code.clone())))
             .expect("failed setting code");
 
         let code_after = node

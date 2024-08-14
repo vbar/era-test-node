@@ -62,7 +62,7 @@ describe("Greeter Smart Contract", function () {
 
     // Validate log is created
     expect(receipt.logs.length).to.greaterThanOrEqual(1);
-    var setGreetingLog = null;
+    let setGreetingLog = null;
     for (var i = 0; setGreetingLog == null && i < receipt.logs.length; ++i) {
       if (receipt.logs[i].address == greeter.address) {
         setGreetingLog = receipt.logs[i];
@@ -84,7 +84,7 @@ describe("Greeter Smart Contract", function () {
     let receipt: TransactionReceipt = await setGreetingTx.wait();
 
     expect(receipt.logs.length).to.greaterThanOrEqual(1);
-    var setGreetingLog = null;
+    let setGreetingLog = null;
     for (var i = 0; setGreetingLog == null && i < receipt.logs.length; ++i) {
       if (receipt.logs[i].address == greeter.address) {
         setGreetingLog = receipt.logs[i];

@@ -14,7 +14,7 @@ The `status` options are:
 
 | Namespace | API | <div style="width:130px">Status</div> | Description |
 | --- | --- | --- | --- |
-| `ANVIL` | `anvil_setNonce` | `SUPPORTED` | Sets the nonce of a given account |
+| `ANVIL` | `anvil_setNonce` | `SUPPORTED` | Sets the nonce of an address.|
 | `ANVIL` | `anvil_impersonateAccount` | `SUPPORTED` | Impersonate an account |
 | `ANVIL` | `anvil_stopImpersonatingAccount` | `SUPPORTED` | Stop impersonating an account after having previously used `anvil_impersonateAccount` |
 | `ANVIL` | `anvil_reset` | `PARTIALLY` | Resets the state of the network; cannot revert to past block numbers, unless they're in a fork |

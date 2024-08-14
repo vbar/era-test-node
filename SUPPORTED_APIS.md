@@ -1677,6 +1677,35 @@ curl --request POST \
 }'
 ```
 
+### `evm_setAccountNonce`
+
+[source](src/node/evm.rs)
+
+Modifies an account's nonce by overwriting it.
+The new nonce must be greater than the existing nonce.
+
+#### Arguments
+
++ `address: Address` - The `Address` whose nonce is to be changed
++ `nonce: U256` - The new nonce
+
+#### Example
+
+```bash
+curl --request POST \
+  --url http://localhost:8011/ \
+  --header 'content-type: application/json' \
+  --data '{
+    "jsonrpc": "2.0",
+      "id": "1",
+      "method": "evm_setAccountNonce",
+      "params": [
+        "0x36615Cf349d7F6344891B1e7CA7C72883F5dc049",
+        "0x1337"
+      ]
+  }'
+```
+
 ### `evm_increaseTime`
 
 [source](src/node/evm.rs)

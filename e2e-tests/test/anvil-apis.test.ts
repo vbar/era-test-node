@@ -94,7 +94,8 @@ describe("anvil_setCode", function () {
     const wallet = new Wallet(RichAccounts[0].PrivateKey);
     const deployer = new Deployer(hre, wallet);
 
-    const address = "0x1000000000000000000000000000000000001111";
+    const randomWallet = Wallet.createRandom()
+    const address = randomWallet.address;
     const artifact = await deployer.loadArtifact("Return5");
     const contractCode = [...ethers.utils.arrayify(artifact.deployedBytecode)];
 

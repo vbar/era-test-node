@@ -13,6 +13,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use eyre::eyre;
 use tokio::runtime::Builder;
 use zksync_basic_types::{Address, L1BatchNumber, L2BlockNumber, L2ChainId, H256, U256, U64};
 
@@ -458,28 +459,30 @@ impl ForkDetails {
         miniblock: u64,
         chain_id: Option<L2ChainId>,
         cache_config: CacheConfig,
-    ) -> Self {
+    ) -> eyre::Result<Self> {
         let url = network.to_url();
-        let block_details = client
+        let opt_block_details = client
             .get_block_details(L2BlockNumber(miniblock as u32))
             .await
-            .unwrap()
-            .unwrap_or_else(|| panic!("Could not find block {:?} in {:?}", miniblock, url));
-
+            .map_err(|error| eyre!(error))?;
+        let block_details = opt_block_details
+            .ok_or_else(|| eyre!("Could not find block {:?} in {:?}", miniblock, url))?;
         let root_hash = block_details
             .base
             .root_hash
-            .unwrap_or_else(|| panic!("fork block #{} missing root hash", miniblock));
-        let block = client
+            .ok_or_else(|| eyre!("fork block #{} missing root hash", miniblock))?;
+        let opt_block = client
             .get_block_by_hash(root_hash, true)
             .await
-            .expect("failed retrieving block")
-            .unwrap_or_else(|| {
-                panic!(
-                    "Could not find block #{:?} ({:#x}) in {:?}",
-                    miniblock, root_hash, url
-                )
-            });
+            .map_err(|error| eyre!(error))?;
+        let block = opt_block.ok_or_else(|| {
+            eyre!(
+                "Could not find block #{:?} ({:#x}) in {:?}",
+                miniblock,
+                root_hash,
+                url
+            )
+        })?;
         let l1_batch_number = block_details.l1_batch_number;
 
         tracing::info!(
@@ -489,21 +492,24 @@ impl ForkDetails {
 
         if !block_details
             .protocol_version
-            .map(supported_protocol_versions)
-            .unwrap_or(false)
+            .map_or(false, supported_protocol_versions)
         {
-            panic!(
-                "This block is using the unsupported protocol version: {:?}. This binary supports versions {}.",
-                block_details.protocol_version,
-                supported_versions_to_string()
-            );
+            return Err(eyre!("This block is using the unsupported protocol version: {:?}. This binary supports versions {}.",
+                             block_details.protocol_version,
+                             supported_versions_to_string()));
         }
 
         let (estimate_gas_price_scale_factor, estimate_gas_scale_factor) =
             network.local_gas_scale_factors();
-        let fee_params = client.get_fee_params().await.ok();
+        let fee_params = match client.get_fee_params().await {
+            Ok(fp) => Some(fp),
+            Err(error) => {
+                tracing::warn!("Cannot get fee params: {:?}", error);
+                None
+            }
+        };
 
-        ForkDetails {
+        Ok(ForkDetails {
             fork_source: Box::new(HttpForkSource::new(url.to_owned(), cache_config.clone())),
             l1_block: l1_batch_number,
             l2_block: block,
@@ -517,15 +523,24 @@ impl ForkDetails {
             estimate_gas_scale_factor,
             fee_params,
             cache_config,
-        }
+        })
     }
     /// Create a fork from a given network at a given height.
-    pub async fn from_network(fork: &str, fork_at: Option<u64>, cache_config: CacheConfig) -> Self {
+    pub async fn from_network(
+        fork: &str,
+        fork_at: Option<u64>,
+        cache_config: CacheConfig,
+    ) -> eyre::Result<Self> {
         let (network, client) = Self::fork_network_and_client(fork);
         let l2_miniblock = if let Some(fork_at) = fork_at {
             fork_at
         } else {
-            client.get_block_number().await.unwrap().as_u64()
+            match client.get_block_number().await {
+                Ok(bn) => bn.as_u64(),
+                Err(error) => {
+                    return Err(eyre!(error));
+                }
+            }
         };
         Self::from_network_and_miniblock_and_chain(
             network,
@@ -539,15 +554,23 @@ impl ForkDetails {
 
     /// Create a fork from a given network, at a height BEFORE a transaction.
     /// This will allow us to apply this transaction locally on top of this fork.
-    pub async fn from_network_tx(fork: &str, tx: H256, cache_config: CacheConfig) -> Self {
+    pub async fn from_network_tx(
+        fork: &str,
+        tx: H256,
+        cache_config: CacheConfig,
+    ) -> eyre::Result<Self> {
         let (network, client) = Self::fork_network_and_client(fork);
-        let tx_details = client.get_transaction_by_hash(tx).await.unwrap().unwrap();
-        let overwrite_chain_id = Some(
-            L2ChainId::try_from(tx_details.chain_id.as_u64()).unwrap_or_else(|err| {
-                panic!("erroneous chain id {}: {:?}", tx_details.chain_id, err,)
-            }),
-        );
-        let miniblock_number = L2BlockNumber(tx_details.block_number.unwrap().as_u32());
+        let opt_tx_details = client
+            .get_transaction_by_hash(tx)
+            .await
+            .map_err(|error| eyre!(error))?;
+        let tx_details = opt_tx_details.ok_or_else(|| eyre!("could not find {:?}", tx))?;
+        let overwrite_chain_id = L2ChainId::try_from(tx_details.chain_id.as_u64())
+            .map_err(|error| eyre!("erroneous chain id {}: {:?}", tx_details.chain_id, error))?;
+        let block_number = tx_details
+            .block_number
+            .ok_or_else(|| eyre!("tx {:?} has no block number", tx))?;
+        let miniblock_number = L2BlockNumber(block_number.as_u32());
         // We have to sync to the one-miniblock before the one where transaction is.
         let l2_miniblock = miniblock_number.saturating_sub(1) as u64;
 
@@ -555,7 +578,7 @@ impl ForkDetails {
             network,
             client,
             l2_miniblock,
-            overwrite_chain_id,
+            Some(overwrite_chain_id),
             cache_config,
         )
         .await
@@ -568,12 +591,7 @@ impl ForkDetails {
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
         let parsed_url = SensitiveUrl::from_str(&url)?;
-        let builder = match Client::http(parsed_url) {
-            Ok(b) => b,
-            Err(error) => {
-                return Err(eyre::Report::msg(error));
-            }
-        };
+        let builder = Client::http(parsed_url).map_err(|error| eyre!(error))?;
         let client = builder.build();
 
         block_on(async move {
@@ -583,14 +601,14 @@ impl ForkDetails {
                 client.get_block_number().await?.as_u64()
             };
 
-            Ok(Self::from_network_and_miniblock_and_chain(
+            Self::from_network_and_miniblock_and_chain(
                 ForkNetwork::Other(url),
                 client,
                 l2_miniblock,
                 None,
                 cache_config,
             )
-            .await)
+            .await
         })
     }
 
@@ -643,6 +661,35 @@ impl ForkDetails {
             "Cound not find tx {:?} in miniblock: {:?}",
             replay_tx, miniblock
         );
+    }
+
+    /// Returns
+    ///
+    /// - `l1_gas_price`
+    /// - `l2_fair_gas_price`
+    /// - `fair_pubdata_price`
+    ///
+    /// for the given l2 block.
+    pub fn get_block_gas_details(&self, miniblock: u32) -> Option<(u64, u64, u64)> {
+        let res_opt_block_details = self.fork_source.get_block_details(L2BlockNumber(miniblock));
+        match res_opt_block_details {
+            Ok(opt_block_details) => opt_block_details.map(|block_details| {
+                (
+                    block_details.base.l1_gas_price,
+                    block_details.base.l2_fair_gas_price,
+                    block_details.base.fair_pubdata_price.unwrap_or_else(|| {
+                        panic!(
+                            "fair pubdata price is not present in {} l2 block details",
+                            miniblock
+                        )
+                    }),
+                )
+            }),
+            Err(e) => {
+                tracing::warn!("Error getting block details: {:?}", e);
+                None
+            }
+        }
     }
 }
 
@@ -705,5 +752,31 @@ mod tests {
         // But writing any value there in the local storage (even 0) - should make it non-initial write immediately.
         fork_storage.set_value(key_with_value_0, H256::zero());
         assert!(!fork_storage.is_write_initial(&key_with_value_0));
+    }
+
+    #[test]
+    fn test_get_block_gas_details() {
+        let fork_details = ForkDetails {
+            fork_source: Box::new(testing::ExternalStorage {
+                raw_storage: InMemoryStorage::default(),
+            }),
+            l1_block: L1BatchNumber(0),
+            l2_block: zksync_types::api::Block::<TransactionVariant>::default(),
+            l2_miniblock: 0,
+            l2_miniblock_hash: H256::zero(),
+            block_timestamp: 0,
+            overwrite_chain_id: None,
+            l1_gas_price: 0,
+            l2_fair_gas_price: 0,
+            estimate_gas_price_scale_factor: 0.0,
+            estimate_gas_scale_factor: 0.0,
+            fee_params: None,
+            cache_config: CacheConfig::None,
+        };
+
+        let actual_result = fork_details.get_block_gas_details(1);
+        let expected_result = Some((123, 234, 345));
+
+        assert_eq!(actual_result, expected_result);
     }
 }

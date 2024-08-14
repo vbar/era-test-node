@@ -65,12 +65,13 @@ describe("anvil_impersonateAccount & anvil_stopImpersonatingAccount", function (
   it("Should allow transfers of funds without knowing the Private Key", async function () {
     // Arrange
     const userWallet = Wallet.createRandom().connect(provider);
-    const beforeBalance = await provider.getBalance(RichAccounts[5].Account);
+    const richAccount = RichAccounts[5].Account;
+    const beforeBalance = await provider.getBalance(richAccount);
 
     // Act
-    await provider.send("anvil_impersonateAccount", [RichAccounts[5].Account]);
+    await provider.send("anvil_impersonateAccount", [richAccount]);
 
-    const signer = await ethers.getSigner(RichAccounts[5].Account);
+    const signer = await ethers.getSigner(richAccount);
     const tx = {
       to: userWallet.address,
       value: ethers.utils.parseEther("0.42"),
@@ -79,12 +80,11 @@ describe("anvil_impersonateAccount & anvil_stopImpersonatingAccount", function (
     const recieptTx = await signer.sendTransaction(tx);
     await recieptTx.wait();
 
-    await provider.send("anvil_stopImpersonatingAccount", [RichAccounts[5].Account]);
+    await provider.send("anvil_stopImpersonatingAccount", [richAccount]);
 
     // Assert
     expect((await userWallet.getBalance()).eq(ethers.utils.parseEther("0.42"))).to.true;
-    expect((await provider.getBalance(RichAccounts[5].Account)).eq(beforeBalance.sub(ethers.utils.parseEther("0.42"))))
-      .to.true;
+    expect((await provider.getBalance(richAccount)).eq(beforeBalance.sub(ethers.utils.parseEther("0.42")))).to.true;
   });
 });
 

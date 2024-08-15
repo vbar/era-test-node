@@ -71,7 +71,7 @@ describe("Greeter Smart Contract", function () {
     expect(setGreetingLog).not.to.equal(null);
 
     const eventInterface = new ethers.utils.Interface(["event LogString(string value)"]);
-    const parsedLog = eventInterface.parseLog(setGreetingLog);
+    const parsedLog = eventInterface.parseLog(setGreetingLog!);
     const parsedLogArg = parsedLog.args[0].toString();
     expect(parsedLogArg).to.equal("Greeting is being updated to Luke Skywalker");
   });

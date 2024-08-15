@@ -71,7 +71,9 @@ describe("Greeter Smart Contract", function () {
     expect(setGreetingLog).not.to.equal(null);
 
     const eventInterface = new ethers.utils.Interface(["event LogString(string value)"]);
-    expect(eventInterface.parseLog(setGreetingLog).args[0]).to.equal("Greeting is being updated to Luke Skywalker");
+    const parsedLog = eventInterface.parseLog(setGreetingLog);
+    const parsedLogArg = parsedLog.args[0].toString();
+    expect(parsedLogArg).to.equal("Greeting is being updated to Luke Skywalker");
   });
 
   it("Should filter event logs", async function () {
@@ -93,7 +95,7 @@ describe("Greeter Smart Contract", function () {
     expect(setGreetingLog).not.to.equal(null);
 
     // Create filter
-    const topic = setGreetingLog.topics[0];
+    const topic = setGreetingLog!.topics[0];
     const filterId = await provider.send("eth_newFilter", [
       {
         fromBlock: "earliest",

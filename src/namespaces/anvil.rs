@@ -33,7 +33,7 @@ pub trait AnvilNamespaceT {
 
     /// Sometimes you may want to advance the latest block number of the network by a large number of blocks.
     /// One way to do this would be to call the evm_mine RPC method multiple times, but this is too slow if you want to mine thousands of blocks.
-    /// The hardhat_mine method can mine any number of blocks at once, in constant time. (It exhibits the same performance no matter how many blocks are mined.)
+    /// The `anvil_mine` method can mine any number of blocks at once, in constant time. (It exhibits the same performance no matter how many blocks are mined.)
     ///
     /// # Arguments
     ///

@@ -130,3 +130,22 @@ describe("evm_revert", function () {
     expect(reverted).to.be.true;
   });
 });
+
+describe("evm_setBlockGasLimit", function () {
+  it("Should change block gas limit", async function () {
+    // Arrange
+    const wallet = new Wallet(RichAccounts[0].PrivateKey, provider);
+
+    // Act
+    const blockBefore = await provider.getBlock("latest");
+    const limitBefore = BigNumber.from(blockBefore.gasLimit).toString();
+    await provider.send("evm_setBlockGasLimit", ["0x1000000000000"]);
+    await provider.send("evm_mine");
+    const blockAfter = await provider.getBlock("latest");
+    await provider.send("evm_setBlockGasLimit", [limitBefore]);
+
+    // Assert
+    expect(limitBefore).to.eq(BigNumber.from("0x4000000000000").toString());
+    expect(BigNumber.from(blockAfter.gasLimit).toString()).to.eq(BigNumber.from("0x1000000000000").toString());
+  });
+});

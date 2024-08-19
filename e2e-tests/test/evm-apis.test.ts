@@ -134,7 +134,6 @@ describe("evm_revert", function () {
 describe("evm_setBlockGasLimit", function () {
   it("Should change block gas limit", async function () {
     // Arrange
-    const wallet = new Wallet(RichAccounts[0].PrivateKey, provider);
 
     // Act
     const blockBefore = await provider.getBlock("latest");

@@ -1789,7 +1789,7 @@ curl --request POST \
 
 [source](src/node/evm.rs)
 
-Sets the Block Gas Limit of the network
+Sets the block gas limit for the following blocks
 
 #### Arguments
 

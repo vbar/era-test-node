@@ -141,6 +141,7 @@ describe("evm_setBlockGasLimit", function () {
     const limitBefore = BigNumber.from(blockBefore.gasLimit).toString();
     await provider.send("evm_setBlockGasLimit", ["0x1000000000000"]);
     await provider.send("evm_mine");
+    await provider.send("evm_mine");
     const blockAfter = await provider.getBlock("latest");
     await provider.send("evm_setBlockGasLimit", [limitBefore]);
 

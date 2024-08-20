@@ -534,7 +534,7 @@ impl ForkDetails {
         fork_at: Option<u64>,
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
-        let (network, client) = Self::fork_network_and_client(fork);
+        let (network, client) = Self::fork_network_and_client(fork)?;
         let l2_miniblock = if let Some(fork_at) = fork_at {
             fork_at
         } else {
@@ -562,7 +562,7 @@ impl ForkDetails {
         tx: H256,
         cache_config: CacheConfig,
     ) -> eyre::Result<Self> {
-        let (network, client) = Self::fork_network_and_client(fork);
+        let (network, client) = Self::fork_network_and_client(fork)?;
         let opt_tx_details = client
             .get_transaction_by_hash(tx)
             .await
@@ -616,7 +616,7 @@ impl ForkDetails {
     }
 
     /// Return [`ForkNetwork`] and HTTP client for a given fork name.
-    pub fn fork_network_and_client(fork: &str) -> (ForkNetwork, Client<L2>) {
+    pub fn fork_network_and_client(fork: &str) -> eyre::Result<(ForkNetwork, Client<L2>)> {
         let network = match fork {
             "mainnet" => ForkNetwork::Mainnet,
             "sepolia-testnet" => ForkNetwork::SepoliaTestnet,
@@ -625,13 +625,9 @@ impl ForkDetails {
         };
 
         let url = network.to_url();
-        let parsed_url = SensitiveUrl::from_str(url)
-            .unwrap_or_else(|_| panic!("Unable to parse client URL: {}", &url));
-        let client = Client::http(parsed_url)
-            .unwrap_or_else(|_| panic!("Unable to create a client for fork: {}", &url))
-            .build();
-
-        (network, client)
+        let parsed_url = SensitiveUrl::from_str(url).map_err(|_| eyre!("Unable to parse client URL: {}", &url))?;
+        let builder = Client::http(parsed_url).map_err(|_| eyre!("Unable to create a client for fork: {}", &url))?;
+        Ok((network, builder.build()))
     }
 
     /// Returns transactions that are in the same L2 miniblock as replay_tx, but were executed before it.

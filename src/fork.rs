@@ -625,41 +625,47 @@ impl ForkDetails {
         };
 
         let url = network.to_url();
-        let parsed_url = SensitiveUrl::from_str(url).map_err(|_| eyre!("Unable to parse client URL: {}", &url))?;
-        let builder = Client::http(parsed_url).map_err(|_| eyre!("Unable to create a client for fork: {}", &url))?;
+        let parsed_url = SensitiveUrl::from_str(url)
+            .map_err(|_| eyre!("Unable to parse client URL: {}", &url))?;
+        let builder = Client::http(parsed_url)
+            .map_err(|_| eyre!("Unable to create a client for fork: {}", &url))?;
         Ok((network, builder.build()))
     }
 
     /// Returns transactions that are in the same L2 miniblock as replay_tx, but were executed before it.
-    pub async fn get_earlier_transactions_in_same_block(&self, replay_tx: H256) -> Vec<L2Tx> {
-        let tx_details = self
+    pub fn get_earlier_transactions_in_same_block(
+        &self,
+        replay_tx: H256,
+    ) -> eyre::Result<Vec<L2Tx>> {
+        let opt_tx_details = self
             .fork_source
             .get_transaction_by_hash(replay_tx)
-            .unwrap()
-            .unwrap();
-        let miniblock = L2BlockNumber(tx_details.block_number.unwrap().as_u32());
+            .map_err(|err| eyre!("Cannot get transaction: {:?}", err))?;
+        let tx_details =
+            opt_tx_details.ok_or_else(|| eyre!("Cannot find transaction {:?}", replay_tx))?;
+        let block_number = tx_details
+            .block_number
+            .ok_or_else(|| eyre!("Block has no number"))?;
+        let miniblock = L2BlockNumber(block_number.as_u32());
 
         // And we're fetching all the transactions from this miniblock.
-        let block_transactions = self
-            .fork_source
-            .get_raw_block_transactions(miniblock)
-            .unwrap();
+        let block_transactions = self.fork_source.get_raw_block_transactions(miniblock)?;
 
         let mut tx_to_apply = Vec::new();
-
         for tx in block_transactions {
             let h = tx.hash();
             let l2_tx: L2Tx = tx.try_into().unwrap();
             tx_to_apply.push(l2_tx);
 
             if h == replay_tx {
-                return tx_to_apply;
+                return Ok(tx_to_apply);
             }
         }
-        panic!(
+        Err(eyre!(
             "Cound not find tx {:?} in miniblock: {:?}",
-            replay_tx, miniblock
-        );
+            replay_tx,
+            miniblock
+        ))
     }
 
     /// Returns

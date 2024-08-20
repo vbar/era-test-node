@@ -241,7 +241,10 @@ impl<S: ForkSource> ForkStorage<S> {
 
         // If value was 0, there is still a chance, that the slot was written to in the past - and only now set to 0.
         // We unfortunately don't have the API to check it on the fork, but we can at least try to check it on local storage.
-        let mut mutator = self.inner.write().unwrap();
+        let mut mutator = self
+            .inner
+            .write()
+            .map_err(|err| eyre!("failed acquiring write lock on storage: {:?}", err))?;
         Ok(mutator.raw_storage.is_write_initial(key))
     }
 

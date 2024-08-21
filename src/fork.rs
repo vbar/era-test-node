@@ -244,7 +244,7 @@ impl<S: ForkSource> ForkStorage<S> {
         let mut mutator = self
             .inner
             .write()
-            .map_err(|err| eyre!("failed acquiring write lock on storage: {:?}", err))?;
+            .map_err(|err| eyre!("failed acquiring write lock on fork storage: {:?}", err))?;
         Ok(mutator.raw_storage.is_write_initial(key))
     }
 

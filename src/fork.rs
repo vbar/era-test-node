@@ -640,7 +640,12 @@ impl ForkDetails {
         let opt_tx_details = self
             .fork_source
             .get_transaction_by_hash(replay_tx)
-            .map_err(|err| eyre!("Cannot get transaction: {:?}", err))?;
+            .map_err(|err| {
+                eyre!(
+                    "Cannot get transaction to replay by hash from fork source: {:?}",
+                    err
+                )
+            })?;
         let tx_details =
             opt_tx_details.ok_or_else(|| eyre!("Cannot find transaction {:?}", replay_tx))?;
         let block_number = tx_details

@@ -242,7 +242,10 @@ async fn main() -> anyhow::Result<()> {
         {
             Ok(txs) => txs,
             Err(error) => {
-                tracing::error!("cannot get transactions: {:?}", error);
+                tracing::error!(
+                    "failed to get earlier transactions in the same block for replay tx: {:?}",
+                    error
+                );
                 return Err(anyhow!(error));
             }
         }

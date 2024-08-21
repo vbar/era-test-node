@@ -699,7 +699,7 @@ impl ForkDetails {
                         None
                     }
                 } else {
-                    tracing::warn!("No block details");
+                    tracing::warn!("No block details for {}", miniblock);
                     None
                 }
             }

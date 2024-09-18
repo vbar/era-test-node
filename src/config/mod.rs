@@ -4,7 +4,7 @@ use cache::CacheConfig;
 use cli::{CacheType, Cli, DevSystemContracts};
 use gas::GasConfig;
 use log::LogConfig;
-use node::InMemoryNodeConfig;
+use node::{InMemoryNodeConfig, ShowCalls, ShowGasDetails};
 use serde::Deserialize;
 
 use crate::system_contracts;
@@ -54,6 +54,12 @@ impl TestNodeConfig {
             self.node.port = *port;
         }
 
+        if opt.debug_mode {
+            self.node.show_calls = ShowCalls::All;
+            self.node.show_outputs = true;
+            self.node.show_gas_details = ShowGasDetails::All;
+            self.node.resolve_hashes = true;
+        }
         if let Some(show_calls) = &opt.show_calls {
             self.node.show_calls = *show_calls;
         }
@@ -284,6 +290,8 @@ pub mod gas {
     // TODO: for now, that's fine, as computation overhead is set to zero, but we may consider using calculated fee input everywhere.
     /// The default L2 Gas Price to be used if not supplied via the CLI argument.
     pub const DEFAULT_L2_GAS_PRICE: u64 = 25_000_000;
+    // Default fair pubdata price based on an average from Sepolia Testnet blocks
+    pub const DEFAULT_FAIR_PUBDATA_PRICE: u64 = 450_000_000_000;
     /// L1 Gas Price Scale Factor for gas estimation.
     pub const DEFAULT_ESTIMATE_GAS_PRICE_SCALE_FACTOR: f64 = 1.5;
     /// The factor by which to scale the gasLimit.

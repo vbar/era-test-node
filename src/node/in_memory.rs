@@ -60,16 +60,15 @@ use zksync_types::{
     block::{unpack_block_info, L2BlockHasher},
     fee::Fee,
     fee_model::{BatchFeeInput, PubdataIndependentBatchFeeModelInput},
-    get_nonce_key,
-    l2::L2Tx,
-    l2::TransactionType,
+    get_code_key, get_nonce_key,
+    l2::{L2Tx, TransactionType},
     utils::{decompose_full_nonce, nonces_to_full_nonce, storage_key_for_eth_balance},
     vm_trace::Call,
     PackedEthSignature, StorageKey, StorageLogQueryType, StorageValue, Transaction,
     ACCOUNT_CODE_STORAGE_ADDRESS, MAX_L2_TX_GAS_LIMIT, SYSTEM_CONTEXT_ADDRESS,
     SYSTEM_CONTEXT_BLOCK_INFO_POSITION,
 };
-use zksync_utils::{h256_to_account_address, h256_to_u256, u256_to_h256};
+use zksync_utils::{bytecode::hash_bytecode, h256_to_account_address, h256_to_u256, u256_to_h256};
 use zksync_web3_decl::error::Web3Error;
 
 /// Max possible size of an ABI encoded tx (in bytes).
@@ -287,7 +286,7 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
         &self,
         storage: StoragePtr<ST>,
     ) -> (L1BatchEnv, BlockContext) {
-        tracing::debug!("creating l1 batch env...");
+        tracing::debug!("Creating l1 batch env...");
 
         let (last_l1_block_num, last_l1_block_ts) = load_last_l1_batch(storage.clone())
             .map(|(num, ts)| (num as u32, ts))
@@ -318,22 +317,10 @@ impl<S: std::fmt::Debug + ForkSource> InMemoryNodeInner<S> {
             .expect("fork_storage lock is already held by the current thread")
             .fork
         {
-            tracing::debug!(
-                "fork details are present. Updating fee input provider's
-                `l1_gas_price`, `l2_fair_gas_price`, `fair_pubdata_price`
-                for batch {}, that is being created..",
-                block_ctx.batch
-            );
-
-            let (l1_gas_price, fair_l2_gas_price, fair_pubdata_price) = {
-                fork.get_block_gas_details(block_ctx.miniblock as u32)
-                    .unwrap()
-            };
-
             fee_input = BatchFeeInput::PubdataIndependent(PubdataIndependentBatchFeeModelInput {
-                fair_l2_gas_price,
-                fair_pubdata_price,
-                l1_gas_price,
+                l1_gas_price: fork.l1_gas_price,
+                fair_l2_gas_price: fork.l2_fair_gas_price,
+                fair_pubdata_price: fork.fair_pubdata_price,
             });
         } else {
             let fee_input_provider = self.fee_input_provider.clone();
@@ -1264,7 +1251,7 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
 
     // Validates L2 transaction
     fn validate_tx(&self, tx: &L2Tx) -> Result<(), String> {
-        let max_gas = U256::from(u32::MAX);
+        let max_gas = U256::from(u64::MAX);
         if tx.common_data.fee.gas_limit > max_gas
             || tx.common_data.fee.gas_per_pubdata_limit > max_gas
         {
@@ -1711,6 +1698,26 @@ impl<S: ForkSource + std::fmt::Debug + Clone> InMemoryNode<S> {
 
         Ok(())
     }
+
+    // Forcefully stores the given bytecode at a given account.
+    pub fn override_bytecode(&self, address: &Address, bytecode: &[u8]) -> Result<(), String> {
+        let mut inner = self
+            .inner
+            .write()
+            .map_err(|e| format!("Failed to acquire write lock: {}", e))?;
+
+        let code_key = get_code_key(address);
+
+        let bytecode_hash = hash_bytecode(bytecode);
+
+        inner
+            .fork_storage
+            .store_factory_dep(bytecode_hash, bytecode.to_owned());
+
+        inner.fork_storage.set_value(code_key, bytecode_hash);
+
+        Ok(())
+    }
 }
 
 /// Keeps track of a block's batch number, miniblock number and timestamp.
@@ -1771,6 +1778,7 @@ pub fn load_last_l1_batch<S: ReadStorage>(storage: StoragePtr<S>) -> Option<(u64
 #[cfg(test)]
 mod tests {
     use ethabi::{Token, Uint};
+    use gas::DEFAULT_FAIR_PUBDATA_PRICE;
     use zksync_basic_types::Nonce;
     use zksync_types::{utils::deployed_address_create, K256PrivateKey};
 
@@ -1793,7 +1801,7 @@ mod tests {
     async fn test_run_l2_tx_validates_tx_gas_limit_too_high() {
         let node = InMemoryNode::<HttpForkSource>::default();
         let tx = testing::TransactionBuilder::new()
-            .set_gas_limit(U256::from(u32::MAX) + 1)
+            .set_gas_limit(U256::from(u64::MAX) + 1)
             .build();
         node.set_rich_account(tx.common_data.initiator_address);
 
@@ -1889,6 +1897,7 @@ mod tests {
                 overwrite_chain_id: None,
                 l1_gas_price: 1000,
                 l2_fair_gas_price: DEFAULT_L2_GAS_PRICE,
+                fair_pubdata_price: DEFAULT_FAIR_PUBDATA_PRICE,
                 fee_params: None,
                 estimate_gas_price_scale_factor: DEFAULT_ESTIMATE_GAS_PRICE_SCALE_FACTOR,
                 estimate_gas_scale_factor: DEFAULT_ESTIMATE_GAS_SCALE_FACTOR,

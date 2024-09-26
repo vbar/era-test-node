@@ -1,12 +1,8 @@
-use multivm::{
-    interface::dyn_tracers::vm_1_5_0::DynTracer,
-    vm_latest::{HistoryMode, SimpleMemory, VmTracer},
+use zksync_multivm::{
+    tracers::dynamic::vm_1_5_0::DynTracer,
+    vm_latest::{HistoryMode, SimpleMemory, VmTracer}, zk_evm_latest::{tracing::{AfterDecodingData, VmLocalStateData}, vm_state::ErrorFlags},
 };
-use zk_evm::{
-    tracing::{AfterDecodingData, VmLocalStateData},
-    vm_state::ErrorFlags,
-};
-use zksync_state::WriteStorage;
+use zksync_state::interface::WriteStorage;
 
 pub struct CallErrorTracer {}
 
